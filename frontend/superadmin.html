@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Event Manager | Super Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/glassmorphism.css">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+    <style>
+        .dashboard-container {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 1rem;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Secure frontend protection
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+            window.location.href = 'index.html';
+        }
+    </script>
+    <div class="bg-layer"></div>
+
+    <div class="dashboard-container">
+        <header class="header">
+            <div>
+                <h1 style="color: var(--neon-yellow); text-shadow: var(--glow-yellow);">Super Admin Terminal</h1>
+                <p style="color: var(--text-secondary);">Manage Event Admins & Dynamic Sheets</p>
+            </div>
+            <a href="#" onclick="logout()" class="btn-primary" style="width: auto;">Logout</a>
+        </header>
+
+        <script>
+            function logout() {
+                localStorage.removeItem('isAuthenticated');
+                window.location.href = 'index.html';
+            }
+        </script>
+
+        <div class="glass-card" style="max-width: 100%; margin-bottom: 3rem;">
+            <h2 style="color: var(--neon-cyan); margin-bottom: 1.5rem;">Provision New Admin Card</h2>
+            <form id="createAdminForm" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Event Name</label>
+                    <input type="text" id="eventName" required placeholder="e.g. CyberHack 2026">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Admin Name</label>
+                    <input type="text" id="adminName" required placeholder="e.g. John Doe">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Admin Email</label>
+                    <input type="email" id="adminEmail" required placeholder="john@example.com">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Venue</label>
+                    <input type="text" id="eventVenue" required placeholder="e.g. Main Hall">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Time</label>
+                    <input type="text" id="eventTime" required placeholder="e.g. 10:30 AM">
+                </div>
+                <button type="submit" class="btn-primary" id="submitBtn" style="height: 50px;">Generate System</button>
+            </form>
+            <div id="loader" style="display: none; color: var(--neon-cyan); margin-top: 1rem;">⚙️ Generating Google Sheet & Mapping... Please wait.</div>
+        </div>
+
+        <h3 style="margin-bottom: 1.5rem;">Active Admin Cards</h3>
+        <div class="cards-grid" id="adminCardsContainer">
+            <!-- Cards will be injected here via JS -->
+        </div>
+    </div>
+
+    <script src="./js/api.js"></script>
+    <script>
+        document.getElementById('createAdminForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            
+            btn.disabled = true;
+            loader.style.display = 'block';
+
+            const payload = {
+                eventName: document.getElementById('eventName').value,
+                adminName: document.getElementById('adminName').value,
+                email: document.getElementById('adminEmail').value,
+                venue: document.getElementById('eventVenue').value,
+                time: document.getElementById('eventTime').value
+            };
+
+            try {
+                const response = await fetch('/api/admin/create-card', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                if(response.ok) {
+                    alert('Success! Admin Card & Google Sheet created.');
+                    loadAdmins(); // Refresh
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to create'));
+                }
+            } catch (error) {
+                alert('Connection error. Is backend running?');
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+                document.getElementById('createAdminForm').reset();
+            }
+        });
+
+        async function loadAdmins() {
+            try {
+                const response = await fetch('/api/admin/all');
+                const data = await response.json();
+                const container = document.getElementById('adminCardsContainer');
+                container.innerHTML = '';
+                
+                if (data.admins && data.admins.length > 0) {
+                    data.admins.forEach(admin => {
+                        container.innerHTML += `
+                            <div class="glass-card" style="border-top: 3px solid var(--btn-rich-bg);">
+                                <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">${admin.eventName}</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Admin: ${admin.adminName}</p>
+                                <div style="background: var(--glass-input-bg); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; margin-bottom: 1rem; color: var(--text-primary);">
+                                    ID: ${admin.adminId}
+                                </div>
+                                <a href="https://docs.google.com/spreadsheets/d/${admin.spreadsheetId}" target="_blank" style="color: var(--neon-yellow); font-size: 0.9rem; text-decoration: none;">📊 View Google Sheet</a>
+                                <br><br>
+                                <a href="form.html?adminId=${admin.adminId}" target="_blank" class="btn-primary" style="width: 100%; font-size: 0.8rem; padding: 0.6rem;">Public Form Link</a>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = '<p style="color: var(--text-secondary);">No active admins found.</p>';
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // Initial load
+        loadAdmins();
+    </script>
+</body>
+</html>

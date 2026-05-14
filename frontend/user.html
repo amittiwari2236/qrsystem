@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Registration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/style.css">
+    <style>
+        :root {
+            --bg-deep-blue: #0b1121;
+            --bg-panel: #151f38;
+            --bg-card: #1c2645;
+            --neon-cyan: #06b6d4;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --overlay-color: rgba(28, 38, 69, 0.98);
+        }
+
+        [data-theme="light"] {
+            --bg-deep-blue: #f1f5f9;
+            --bg-panel: #ffffff;
+            --bg-card: #ffffff;
+            --neon-cyan: #0891b2;
+            --text-primary: #1e3a8a;
+            --text-secondary: #64748b;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --overlay-color: rgba(255, 255, 255, 0.95);
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            background: var(--bg-deep-blue);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Full Background Blur Layer */
+        .bg-blur-layer {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background: url('https://www.dsvv.ac.in/wp-content/uploads/2022/01/dsvv1-1-1-300x300.jpg') no-repeat center/cover;
+            filter: blur(60px) brightness(0.4);
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        [data-theme="light"] .bg-blur-layer {
+            filter: blur(60px) brightness(1.2);
+            opacity: 0.4;
+        }
+
+        .card-container {
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+            margin: 1.5rem;
+            position: relative;
+            background: url('https://www.dsvv.ac.in/wp-content/uploads/2022/03/DEV_0235-Without-Vehicle-min.jpg') no-repeat center/cover;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        [data-theme="light"] .card-container {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .diagonal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg,
+                    var(--overlay-color) 0%,
+                    var(--overlay-color) 52%,
+                    rgba(0, 0, 0, 0.2) 52.5%,
+                    transparent 53%);
+            z-index: 1;
+            transition: background 0.3s ease;
+            backdrop-filter: blur(12px);
+        }
+
+        [data-theme="light"] .diagonal-overlay {
+            background: linear-gradient(120deg,
+                    rgba(255, 255, 255, 0.85) 0%,
+                    rgba(255, 255, 255, 0.85) 52%,
+                    rgba(255, 255, 255, 0.1) 52.5%,
+                    transparent 53%);
+        }
+
+        .form-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            padding: 4rem;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .form-content h1 {
+            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 3rem;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        /* Bottom border input styling */
+        .bottom-border-input,
+        .bottom-border-select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            padding: 1rem 1.2rem;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        [data-theme="light"] .bottom-border-input,
+        [data-theme="light"] .bottom-border-select {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .bottom-border-input::placeholder {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .bottom-border-input:focus,
+        .bottom-border-select:focus {
+            border-color: var(--neon-cyan);
+        }
+
+        .bottom-border-select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* "Admin Portal" Link */
+        .admin-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .admin-link:hover {
+            color: var(--neon-cyan);
+        }
+
+        /* Button unification - using global styles */
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+            font-weight: 600;
+        }
+
+        .logo-placeholder {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 2;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Theme Toggle Styling */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--neon-cyan);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background: var(--neon-cyan);
+            color: white;
+        }
+    </style>
+    <script>
+        // Apply theme immediately to prevent flicker
+        (function () {
+            const savedTheme = localStorage.getItem('user-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            // Set initial logo
+            const darkLogo = "https://dsvv.s3.ap-south-1.amazonaws.com/uploads/2023/03/DSVV_LOGO_PNG.png";
+            const lightLogo = "https://www.addressguru.in/images/1801593532.png";
+
+            window.addEventListener('DOMContentLoaded', () => {
+                const logo = document.getElementById('mainLogo');
+                if (logo) logo.src = savedTheme === 'light' ? lightLogo : darkLogo;
+            });
+        })();
+    </script>
+</head>
+
+<body>
+
+    <div class="bg-blur-layer"></div>
+
+    <div class="theme-toggle" id="themeToggle" title="Toggle Theme">
+        <svg id="moonIcon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </div>
+
+    <div class="card-container">
+        <div class="diagonal-overlay"></div>
+
+        <div class="form-content">
+            <div style="margin-bottom: 0.5rem; transform: translateX(-15px);">
+                <img id="mainLogo" src="https://dsvv.s3.ap-south-1.amazonaws.com/uploads/2023/03/DSVV_LOGO_PNG.png"
+                    alt="DSVV Logo"
+                    style="width: 240px; height: auto; filter: drop-shadow(0 0 15px rgba(255,255,255,0.15));">
+            </div>
+            <h1 style="margin-bottom: 2rem; font-size: 2.2rem;">Registration</h1>
+
+            <form id="startRegistrationForm">
+                <div class="form-group">
+                    <input type="text" id="scholarId" class="bottom-border-input" placeholder="Enter Scholar ID"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <select id="eventSelect" class="bottom-border-select">
+                        <option value="" disabled selected>Select Event</option>
+                    </select>
+                    <a href="index.html" class="admin-link">Admin Portal</a>
+                </div>
+
+                <div id="errorMsg" class="error-msg"></div>
+
+                <button type="submit" class="btn-gradient" id="validateBtn">VALIDATE & PROCEED</button>
+            </form>
+        </div>
+
+        <div class="logo-placeholder"></div>
+    </div>
+
+    <script src="./js/user.js"></script>
+    <script>
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('user-theme', newTheme);
+
+            // Swap Logo
+            const logo = document.getElementById('mainLogo');
+            const darkLogo = "https://dsvv.s3.ap-south-1.amazonaws.com/uploads/2023/03/DSVV_LOGO_PNG.png";
+            const lightLogo = "https://www.addressguru.in/images/1801593532.png";
+            if (logo) logo.src = newTheme === 'light' ? lightLogo : darkLogo;
+        });
+    </script>
+</body>
+
+</html>

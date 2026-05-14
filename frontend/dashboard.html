@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Registration System | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+
+    <script>
+        // Security Lock
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+            window.location.href = 'index.html';
+        }
+    </script>
+
+    <div class="spa-layout">
+        
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-glow">
+                    <img src="https://dsvv.in/wp-content/uploads/2024/08/DSVV-Logo-510x431-1.png" alt="DSVV Logo" style="width: 120%; height: 120%; object-fit: contain;">
+                </div>
+                <div style="overflow: hidden;">
+                    <h3 style="font-weight: 700; font-size: 1.35rem; color: var(--text-primary); margin: 0; letter-spacing: -0.5px; white-space: nowrap;">Event System</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; white-space: nowrap;">Admin Portal</p>
+                </div>
+            </div>
+
+            <div class="profile-card">
+                <div class="avatar-circle">A</div>
+                <div>
+                    <h4 style="font-size: 0.95rem; color: var(--text-primary); margin: 0; font-weight: 600;">Amit Tiwari</h4>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">amit@gmail.com</p>
+                </div>
+                <div class="bell-icon"><i class="fa-regular fa-bell"></i></div>
+            </div>
+
+            <nav class="nav-links">
+                <div class="nav-item active" onclick="switchTab('events', this)">
+                    <span>📊 Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('registrations', this)">
+                    <span>👥 Registrations</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('scanner', this)">
+                    <span>🔲 QR Scanner</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('reports', this)">
+                    <span>📄 Reports</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('notifications', this)">
+                    <span>🔔 Notifications <span id="navUnreadBadge" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.65rem; margin-left: auto;">0</span></span>
+                </div>
+                <div class="nav-item" onclick="switchTab('settings', this)">
+                    <span>⚙️ Settings</span>
+                </div>
+            </nav>
+
+            <div style="padding: 1.5rem; border-top: 1px solid var(--glass-border); margin-top: auto;">
+                <div class="nav-item" onclick="window.open('user.html', '_blank')">
+                    <span>🌐 User Portal</span>
+                </div>
+                <div class="nav-item" onclick="toggleLightMode()">
+                    <span>☀️ Visual Mode</span>
+                </div>
+                <div class="nav-item" style="color: #ef4444; margin-top: 0.5rem;" onclick="logout()">
+                    <span>🚪 Logout</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div class="page-title">
+                    <h1 id="pageTitle">Dashboard</h1>
+                    <p id="pageSubtitle">Welcome back to your dashboard</p>
+                </div>
+                <div style="text-align: right; background: rgba(255,255,255,0.02); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                    <p style="font-size: 0.75rem; color: var(--text-secondary);">Current Date</p>
+                    <strong id="currentDateDisplay">May 5, 2026</strong>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                
+
+
+
+                <!-- SECTION: EVENTS -->
+                <section id="sec-events" class="spa-section active">
+                    <div class="stats-grid" style="margin-bottom: 2rem;">
+                        <div class="stat-card">
+                            <div class="badge">+12%</div>
+                            <div class="stat-icon" style="color: #3b82f6;">📅</div>
+                            <div class="stat-value" id="dashTotalEvents">0</div>
+                            <div class="stat-label">Total Events</div>
+                            <div style="height: 3px; background: #3b82f6; width: 60%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="badge">+23%</div>
+                            <div class="stat-icon" style="color: var(--neon-purple);">👥</div>
+                            <div class="stat-value" id="dashTotalReg">0</div>
+                            <div class="stat-label">Registrations</div>
+                            <div style="height: 3px; background: var(--neon-purple); width: 85%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="badge">+18%</div>
+                            <div class="stat-icon" style="color: var(--neon-green);">💵</div>
+                            <div class="stat-value" id="dashRevenue">$0</div>
+                            <div class="stat-label">Revenue</div>
+                            <div style="height: 3px; background: var(--neon-green); width: 45%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="badge">+8%</div>
+                            <div class="stat-icon" style="color: var(--neon-yellow);">✔️</div>
+                            <div class="stat-value" id="dashAttendance">0</div>
+                            <div class="stat-label">Attendance</div>
+                            <div style="height: 3px; background: var(--neon-yellow); width: 70%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                    </div>
+
+
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div>
+                            <!-- Header removed to avoid duplication with topbar -->
+                        </div>
+                        <button class="btn-primary" onclick="openModal('createEventModal')">+ Deploy Event</button>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; align-items: center;" id="eventFiltersContainer">
+                        <button class="btn-outline" onclick="filterEvents('All', this)">All</button>
+                        <button class="btn-outline" onclick="filterEvents('Ongoing', this)">Ongoing</button>
+                        <button class="btn-outline" onclick="filterEvents('Completed', this)">Completed</button>
+                        
+                        <div style="position: relative; margin-left: auto;">
+                            <input type="text" id="eventSearchInput" placeholder="Search events..." oninput="searchEvents()" style="padding: 0.6rem 1rem 0.6rem 2.5rem; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--text-primary); width: 250px;">
+                            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.5;">🔍</span>
+                        </div>
+                    </div>
+
+                    <div id="eventsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Events injected via JS -->
+                    </div>
+
+
+                </section>
+
+
+                <!-- SECTION: REGISTRATIONS & UPLOADS -->
+                <section id="sec-registrations" class="spa-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div>
+                            <!-- Section header removed to avoid duplication with topbar -->
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button class="btn-glow" style="background: #ef4444;" onclick="bulkDeleteEventRecords()">🗑 Delete All Records</button>
+                            <button class="btn-glow" style="background: var(--neon-purple);" onclick="openModal('uploadModal')">📁 Upload Excel/PDF</button>
+                            <button class="btn-glow" onclick="openModal('manualEntryModal')">+ New Registration</button>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem;">
+                        <!-- Filters & Search -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border);">
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="btn-outline">All</button>
+                                <button class="btn-outline">Present</button>
+                                <button class="btn-outline">Pending</button>
+                            </div>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <select id="registrationsEventSelect" style="padding: 0.6rem; border-radius: 8px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                                    <option value="">Select Event</option>
+                                </select>
+                                <div style="position: relative;">
+                                    <input type="text" placeholder="Search by name or ID..." style="padding: 0.6rem 1rem 0.6rem 2.5rem; border-radius: 20px; background: var(--glass-input-bg); border: 1px solid var(--glass-border); color: var(--text-primary); width: 250px;">
+                                    <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.5;">🔍</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Scholar ID</th>
+                                        <th>Name</th>
+                                        <th>Mobile</th>
+                                        <th>Email</th>
+                                        <th>Course / Sem</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>QR Code</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registrationsTableBody">
+                                    <tr><td colspan="9" style="text-align:center; color: var(--text-secondary);">Upload data to view records.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- SECTION: QR SCANNER -->
+                <section id="sec-scanner" class="spa-section">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                        <!-- Left Panel: Verify Input -->
+                        <div class="stat-card" style="padding: 2.5rem;">
+                            <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem; color: var(--text-primary);">Verify with ID</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">Manually enter a Registration ID or Scholar ID, or use the scanner.</p>
+                            
+                            <form id="verifyIdForm">
+                                <div class="input-group">
+                                    <label style="color: var(--text-primary);">Registration / Scholar ID</label>
+                                    <input type="text" id="verifyInputId" placeholder="e.g. REG-1-001 or 123456" required style="padding: 1rem; font-size: 1.1rem; text-transform: uppercase; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                                </div>
+                                
+                                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                                    <button type="submit" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1rem;">🔍Scan Me!</button>
+                                </div>
+                            </form>
+                            
+                            <div id="cameraScannerContainer" style="display:none; margin-top: 1.5rem; width: 100%; height: 250px; background: var(--bg-card); border-radius: 8px; align-items:center; justify-content:center; color: var(--neon-cyan); border: 2px dashed rgba(6, 182, 212, 0.3);">
+                                [Camera Feed]
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Result & Action -->
+                        <div class="stat-card" style="padding: 2.5rem; background: var(--bg-card); position: relative; overflow: hidden;">
+                            <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: var(--text-primary);">Verification Result</h3>
+                            
+                            <div id="verifyResultContainer">
+                                <div style="text-align:center; color: var(--text-secondary); padding: 3rem 0;">
+                                    <svg width="60" height="60" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity:0.3; margin-bottom:1rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    <p>Enter an ID to verify registration.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- SECTION: REPORTS -->
+                <section id="sec-reports" class="spa-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div>
+                            <h2 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 0.5rem;">Reports & Export</h2>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Generate and download comprehensive reports</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 2rem;">
+                        <div class="stat-card" style="padding: 1.5rem;">
+                            <div class="stat-label">Total Events</div>
+                            <div class="stat-value" id="repTotalEvents" style="color: #3b82f6; font-size: 1.8rem; margin-top: 0.5rem;">0</div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem;">
+                            <div class="stat-label">Total Registrations</div>
+                            <div class="stat-value" id="repTotalReg" style="color: var(--neon-purple); font-size: 1.8rem; margin-top: 0.5rem;">0</div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem;">
+                            <div class="stat-label">Total Revenue</div>
+                            <div class="stat-value" id="repRevenue" style="color: var(--neon-green); font-size: 1.8rem; margin-top: 0.5rem;">$0</div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem;">
+                            <div class="stat-label">Attendance Rate</div>
+                            <div class="stat-value" id="repAttendance" style="color: var(--neon-yellow); font-size: 1.8rem; margin-top: 0.5rem;">0%</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+                        <div class="stat-card" style="padding: 2rem;">
+                            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">📄 Configure Report</h3>
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <button class="btn-primary" style="text-align: left; width: 100%;">📅 Events Report</button>
+                                <button class="btn-outline" style="text-align: left; border-radius: 8px;">👥 Registrations Report</button>
+                                <button class="btn-outline" style="text-align: left; border-radius: 8px;">💵 Revenue Report</button>
+                                <button class="btn-outline" style="text-align: left; border-radius: 8px;">✔️ Attendance Report</button>
+                            </div>
+                            
+                            <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--text-secondary);">Export Format</h4>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="btn-primary" style="flex: 1;" onclick="exportReport('pdf')">PDF</button>
+                                <button class="btn-outline" style="flex: 1;" onclick="exportReport('csv')">CSV</button>
+                                <button class="btn-outline" style="flex: 1;" onclick="exportReport('excel')">EXCEL</button>
+                            </div>
+                        </div>
+
+                        <div class="stat-card" style="padding: 2rem; overflow-x: auto;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                                <h3 style="color: var(--text-primary);">Events Preview</h3>
+                                <span style="color: var(--neon-cyan); cursor: pointer;">🔍 Filter</span>
+                            </div>
+                            <table class="data-table" style="width: 100%;">
+                                <thead>
+                                    <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                                        <th style="padding: 1rem;">Event</th>
+                                        <th style="padding: 1rem;">Date</th>
+                                        <th style="padding: 1rem;">Registered</th>
+                                        <th style="padding: 1rem;">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportPreviewTable">
+                                    <tr><td colspan="4" style="text-align:center; padding: 1rem; color: var(--text-secondary);">Loading preview...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION: NOTIFICATIONS -->
+                <section id="sec-notifications" class="spa-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div>
+                            <h2 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 0.5rem;">Notifications</h2>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;"><span id="unreadCountHeader">0</span> unread notifications</p>
+                        </div>
+                        <button class="btn-primary" onclick="markAllNotificationsRead()">✔️ Mark all as read</button>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                        <button class="btn-primary" onclick="filterNotifications('all')">All (<span id="totalNotifCount">0</span>)</button>
+                        <button class="btn-outline" onclick="filterNotifications('unread')">Unread (<span id="unreadNotifCount">0</span>)</button>
+                    </div>
+
+                    <div id="notificationsContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- Dynamic Notifications Here -->
+                        <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Loading notifications...</div>
+                    </div>
+                </section>
+
+                <!-- SECTION: SETTINGS -->
+                <section id="sec-settings" class="spa-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div class="profile-card" style="background: var(--bg-card); padding: 1.5rem; width: 100%; border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; gap: 1.5rem;">
+                            <div class="avatar" style="width: 60px; height: 60px; font-size: 1.5rem;">A</div>
+                            <div>
+                                <h2 style="color: var(--text-primary); margin-bottom: 0.2rem;">Admin User</h2>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">admin@event.com</p>
+                                <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-top: 0.5rem; display: inline-block;">admin</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem;">
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Profile Settings Modal')">
+                            <div style="font-size: 1.5rem; color: #3b82f6;">👤</div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Profile Settings</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem;">Manage your account information</p>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Notification Preferences Modal')">
+                            <div style="font-size: 1.5rem; color: #3b82f6;">🔔</div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Notifications</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem;">Configure notification preferences</p>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Security Modal')">
+                            <div style="font-size: 1.5rem; color: #3b82f6;">🛡️</div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Security</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem;">Password and authentication settings</p>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="toggleLightMode()">
+                            <div style="font-size: 1.5rem; color: #3b82f6;">🎨</div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Appearance</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem;">Customize theme and display</p>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Data Privacy Modal')">
+                            <div style="font-size: 1.5rem; color: #3b82f6;">🗄️</div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Data & Privacy</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem;">Export data and privacy controls</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Quick Actions</h3>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn-primary" style="flex: 1;" onclick="exportData()">Export Data</button>
+                        <button class="btn-outline" style="flex: 1;" onclick="clearCache()">Clear Cache</button>
+                        <button class="btn-danger" style="flex: 1;" onclick="deleteAccount()">Delete Account</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+
+
+    <!-- MODAL: Create Event -->
+    <div class="modal-overlay" id="createEventModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1.5rem; color: var(--neon-cyan);">Deploy New Event Engine</h2>
+            <form id="createEventForm">
+                <div class="input-group">
+                    <label>Event Title</label>
+                    <input type="text" id="evName" required placeholder="e.g. CyberHack 2026" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Admin Name</label>
+                        <input type="text" id="evAdmin" required placeholder="e.g. John Doe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Organizer Name</label>
+                        <input type="text" id="evOrganizer" required placeholder="e.g. CSDS Department" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Event Poster Image</label>
+                    <input type="file" id="evImage" accept="image/*" style="padding: 1rem; border: 2px dashed var(--neon-cyan); background: rgba(59, 130, 246, 0.05); cursor: pointer; width: 100%;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Date</label>
+                        <input type="date" id="evDate" required style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Time</label>
+                        <input type="time" id="evTime" required style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Venue</label>
+                    <input type="text" id="evVenue" required placeholder="e.g. Auditorium, DSVV" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div class="input-group">
+                    <label>Event Description (Poster Only)</label>
+                    <textarea id="evDesc" placeholder="Enter detailed description for the poster..." style="width: 100%; height: 100px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 8px; padding: 0.8rem; box-sizing: border-box;"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Capacity</label>
+                        <input type="number" id="evCap" value="100" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Ticket Price ($)</label>
+                        <input type="number" id="evPrice" value="0" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn-outline" style="flex: 1;" onclick="closeModal('createEventModal')">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;" id="btnCreateEvent">Generate System</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- View QR Modal (Generic for Student & Event) -->
+    <div class="modal-overlay" id="viewQrModal" style="display: none;">
+        <div class="modal-content" style="max-width: 440px; text-align: center; border: 1px solid var(--glass-border); border-radius: 28px; background: var(--bg-card); backdrop-filter: blur(25px); padding: 3rem 2.5rem; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); position: relative;">
+            <!-- Background Image Layer (Cinematic campus view) -->
+            <div id="modalQrBg" style="position: absolute; inset: 0; background: url('https://image-static.collegedunia.com/public/college_data/images/campusimage/1433241647shriram-bhawan-ariel-view.jpg') center/cover no-repeat; filter: blur(12px) brightness(0.4); opacity: 0.5; z-index: 0; transform: scale(1.1);"></div>
+            
+            <!-- Content Wrapper to stay above background -->
+            <div style="position: relative; z-index: 1;">
+                <h2 id="modalQrHeader" style="margin-bottom: 2rem; color: #38bdf8; font-size: 1.6rem; letter-spacing: -0.5px; font-weight: 800; text-transform: uppercase;">QR Code Preview</h2>
+                
+                <div style="background: white; padding: 1.25rem; border-radius: 18px; display: inline-block; margin-bottom: 2rem; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
+                    <img id="modalQrImage" src="" alt="QR Code" style="width: 220px; height: 220px; display: block;">
+                </div>
+                
+                <h3 id="modalQrId" style="color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; letter-spacing: 2px; margin-bottom: 0.6rem; font-weight: 800; text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);"></h3>
+                <p id="modalQrName" style="color: white; font-weight: 700; font-size: 1.5rem; margin-bottom: 0.4rem; letter-spacing: -0.2px;"></p>
+                <p id="modalQrCourse" style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 1rem; font-weight: 500; opacity: 0.9;"></p>
+                <a id="modalQrPortalLink" href="#" target="_blank" style="display: none; color: #38bdf8; font-family: monospace; font-size: 0.8rem; margin-bottom: 2rem; word-break: break-all; text-decoration: none; border-bottom: 1px dashed #38bdf8; opacity: 0.8; transition: 0.3s;"></a>
+                
+                <div style="display: flex; gap: 1rem; justify-content: center;" data-html2canvas-ignore="true">
+                    <button class="btn-primary" style="flex: 1; padding: 0.7rem 1.25rem; font-size: 0.8rem; letter-spacing: 1px; font-weight: 700;" onclick="downloadModalQr()">⬇ DOWNLOAD QR</button>
+                    <button class="btn-outline" style="flex: 1; padding: 0.7rem 1.25rem; font-size: 0.8rem; letter-spacing: 1px; font-weight: 700; border-color: rgba(255,255,255,0.2); color: white;" onclick="closeModal('viewQrModal')">CLOSE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Upload Data -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1.5rem; color: var(--neon-purple);">Bulk Student Upload</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.85rem;">Upload Excel (.xlsx), CSV, or PDF files. The system will automatically parse Name, Mobile, Email, Course, and Semester and save directly to Google Sheets.</p>
+            <form id="uploadForm">
+                <div class="input-group">
+                    <label>Target Event</label>
+                    <select id="modalUploadEventSelect" required style="width: 100%; padding: 0.8rem; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary);">
+                        <option value="">Select Event to Target</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Select File</label>
+                    <input type="file" id="bulkFile" accept=".xlsx,.csv,.xls,.pdf" required style="padding: 1rem; border: 2px dashed var(--neon-cyan); background: rgba(6, 182, 212, 0.05); cursor: pointer;">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn-outline" style="flex: 1;" onclick="closeModal('uploadModal')">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex: 1; background: var(--neon-purple);" id="btnUpload">Process & Extract</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Manual Entry -->
+    <div class="modal-overlay" id="manualEntryModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1.5rem; color: var(--neon-cyan);">Manual Student Entry</h2>
+            <form id="manualEntryForm">
+                <div class="input-group">
+                    <label>Target Event</label>
+                    <select id="modalManualEventSelect" required style="width: 100%; padding: 0.8rem; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary);">
+                        <option value="">Select Event to Target</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Scholar ID</label>
+                    <input type="text" id="manualScholarId" required placeholder="e.g. 123456" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div class="input-group">
+                    <label>Name</label>
+                    <input type="text" id="manualName" required placeholder="e.g. Jane Doe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Mobile</label>
+                        <input type="text" id="manualMobile" required style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="manualEmail" required style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Course</label>
+                        <input type="text" id="manualCourse" required style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Semester</label>
+                        <input type="text" id="manualSemester" required style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn-outline" style="flex: 1;" onclick="closeModal('manualEntryModal')">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;" id="btnManualEntry">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Event Details -->
+    <div class="modal-overlay" id="eventDetailsModal">
+        <div class="modal-content" style="max-width: 760px; padding: 2rem; border-radius: 20px;">
+            <!-- Header Row -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-primary);">Event Details</h2>
+                <button onclick="closeModal('eventDetailsModal')" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.6rem; line-height: 1; padding: 0;">&times;</button>
+            </div>
+            <!-- Banner Image -->
+            <div id="detailModalBanner" style="width: 100%; height: 260px; border-radius: 14px; background-size: cover; background-position: center; background-color: var(--bg-card); margin-bottom: 1.75rem; border: 1px solid var(--glass-border);"></div>
+            <!-- Event Title + Description -->
+            <div style="margin-bottom: 1.75rem;">
+                <h3 id="detailEventName" style="margin: 0 0 0.4rem; font-size: 1.75rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px;">Event Name</h3>
+                <p id="detailEventDesc" style="margin: 0; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;"></p>
+            </div>
+            <!-- Info Cards Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="ev-info-card">
+                    <div class="ev-info-icon" style="color: var(--neon-cyan); background: rgba(56,189,248,0.08);"><i class="fa-regular fa-calendar-check"></i></div>
+                    <div><p class="ev-info-label">Date &amp; Time</p><p id="detailEventDateTime" class="ev-info-value">—</p></div>
+                </div>
+                <div class="ev-info-card">
+                    <div class="ev-info-icon" style="color: var(--neon-cyan); background: rgba(56,189,248,0.08);"><i class="fa-solid fa-location-dot"></i></div>
+                    <div><p class="ev-info-label">Location</p><p id="detailEventVenue" class="ev-info-value">—</p></div>
+                </div>
+                <div class="ev-info-card">
+                    <div class="ev-info-icon" style="color: var(--neon-purple); background: rgba(168,85,247,0.08);"><i class="fa-solid fa-users"></i></div>
+                    <div><p class="ev-info-label">Capacity</p><p id="detailEventCapacity" class="ev-info-value">—</p></div>
+                </div>
+                <div class="ev-info-card">
+                    <div class="ev-info-icon" style="color: var(--neon-green); background: rgba(34,197,94,0.08);"><i class="fa-solid fa-dollar-sign"></i></div>
+                    <div><p class="ev-info-label">Price</p><p id="detailEventPrice" class="ev-info-value">—</p></div>
+                </div>
+                <div class="ev-info-card">
+                    <div class="ev-info-icon" style="color: var(--neon-yellow); background: rgba(234,179,8,0.08);"><i class="fa-regular fa-user"></i></div>
+                    <div><p class="ev-info-label">Organizer</p><p id="detailEventOrganizer" class="ev-info-value">—</p></div>
+                </div>
+                <div class="ev-info-card">
+                    <div class="ev-info-icon" style="color: var(--neon-cyan); background: rgba(56,189,248,0.08);"><i class="fa-solid fa-hashtag"></i></div>
+                    <div><p class="ev-info-label">Category</p><p id="detailEventCategory" class="ev-info-value">—</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="./js/dashboard.js"></script>
+</body>
+</html>
