@@ -236,6 +236,42 @@
             background: var(--neon-cyan);
             color: white;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .card-container {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+            .image-section {
+                width: 100%;
+                height: 30vh;
+                min-height: 250px;
+            }
+            .form-section {
+                width: 100%;
+                padding: 2rem 1.5rem;
+            }
+            .form-content {
+                width: 100%;
+            }
+            .form-title {
+                font-size: 2rem;
+            }
+            .logo-placeholder {
+                bottom: 1rem;
+                right: 1rem;
+            }
+            .theme-toggle {
+                top: 1rem;
+                right: 1rem;
+                width: 40px;
+                height: 40px;
+            }
+        }
     </style>
     <script>
         // Apply theme immediately to prevent flicker

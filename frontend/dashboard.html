@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -89,9 +90,14 @@
             
             <!-- TOPBAR -->
             <header class="topbar">
-                <div class="page-title">
-                    <h1 id="pageTitle">Dashboard</h1>
-                    <p id="pageSubtitle">Welcome back to your dashboard</p>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="mobileMenuBtn" style="background: transparent; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; display: none;" aria-label="Toggle Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="page-title">
+                        <h1 id="pageTitle">Dashboard</h1>
+                        <p id="pageSubtitle">Welcome back to your dashboard</p>
+                    </div>
                 </div>
                 <div style="text-align: right; background: rgba(255,255,255,0.02); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
                     <p style="font-size: 0.75rem; color: var(--text-secondary);">Current Date</p>
@@ -171,7 +177,10 @@
                         <div>
                             <!-- Section header removed to avoid duplication with topbar -->
                         </div>
-                        <div style="display: flex; gap: 1rem;">
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <button class="btn-primary" onclick="handleDownloadSelection()" style="background: var(--btn-rich-bg); box-shadow: var(--btn-rich-shadow);">
+                                <i class="fas fa-download"></i> Download
+                            </button>
                             <button class="btn-glow" style="background: #ef4444;" onclick="bulkDeleteEventRecords()">🗑 Delete All Records</button>
                             <button class="btn-glow" style="background: var(--neon-purple);" onclick="openModal('uploadModal')">📁 Upload Excel/PDF</button>
                             <button class="btn-glow" onclick="openModal('manualEntryModal')">+ New Registration</button>
@@ -197,10 +206,11 @@
                             </div>
                         </div>
 
-                        <div style="overflow-x: auto;">
+                        <div style="overflow-x: auto; max-height: 65vh; overflow-y: auto; position: relative;">
                             <table class="data-table">
                                 <thead>
                                     <tr>
+                                        <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllRegistrations" class="custom-checkbox"></th>
                                         <th>Scholar ID</th>
                                         <th>Name</th>
                                         <th>Mobile</th>

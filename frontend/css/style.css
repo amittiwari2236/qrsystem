@@ -662,6 +662,65 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--neon-cyan);
 }
 
+/* Custom Checkboxes */
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0;
+}
+
+.custom-checkbox:checked {
+    background: #2563eb;
+    border-color: #2563eb;
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+}
+
+.custom-checkbox:checked::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    color: white;
+    font-size: 11px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.custom-checkbox:hover {
+    border-color: #2563eb;
+    background: rgba(37, 99, 235, 0.15);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] .custom-checkbox {
+    background: #f1f5f9;
+    border-color: rgba(30, 58, 138, 0.3);
+}
+
+[data-theme="light"] .custom-checkbox:hover {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: #2563eb;
+}
+
+[data-theme="light"] .custom-checkbox:checked {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+[data-theme="light"] .custom-checkbox:checked::after {
+    color: #ffffff;
+}
+
 /* Data Tables */
 .data-table {
     .stat-card {
@@ -695,11 +754,15 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     thead {
-        background: var(--glass-bg);
-        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--bg-card); /* Keep solid background to prevent row overlap transparency */
     }
 
     th {
+        position: sticky;
+        top: 0;
         padding: 1.25rem 1rem;
         color: var(--text-secondary);
         font-size: 0.75rem;
@@ -707,6 +770,8 @@ h1, h2, h3, h4, h5, h6 {
         letter-spacing: 0.1em;
         font-weight: 700;
         border-bottom: 1px solid var(--glass-border);
+        background: var(--bg-card);
+        z-index: 100;
     }
 
     td {
@@ -1033,4 +1098,144 @@ h1, h2, h3, h4, h5, h6 {
     .event-details-grid {
         grid-template-columns: 1fr;
     }
-}}
+}
+
+/* ==========================================
+   GLOBAL RESPONSIVE STYLES
+   ========================================== */
+
+/* Tablets & Small Laptops (max-width: 1024px) */
+@media (max-width: 1024px) {
+    /* Layout */
+    .spa-layout {
+        flex-direction: column;
+    }
+    
+    #mobileMenuBtn {
+        display: block !important;
+    }
+
+    /* Sidebar transforms into a bottom navigation or hidden drawer */
+
+    .sidebar {
+        position: fixed;
+        left: -280px; /* Hide by default */
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    }
+
+    body.sidebar-open .sidebar {
+        left: 0;
+    }
+
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    /* Grids */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    #eventsContainer {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    }
+}
+
+/* Mobile Devices (max-width: 768px) */
+@media (max-width: 768px) {
+    /* Padding & Spacing Adjustments */
+    .content-wrapper {
+        padding: 1rem;
+    }
+
+    .stat-card {
+        padding: 1.25rem !important;
+    }
+
+    /* Topbar */
+    .topbar {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .topbar > div:last-child {
+        width: 100%;
+        text-align: left;
+    }
+
+    /* Grids */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        padding: 1.5rem !important;
+        margin: 1rem;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Form Grids within Modals */
+    .modal-content > form > div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tables */
+    .data-table th, .data-table td {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* Sections / Headers */
+    .spa-section > div[style*="display: flex; justify-content: space-between"] {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .spa-section > div[style*="display: flex; justify-content: space-between"] > div {
+        width: 100%;
+    }
+
+    /* Buttons */
+    .btn-glow, .btn-primary, .btn-outline {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Reports Split Layout */
+    #sec-reports > div[style*="display: grid; grid-template-columns: 1fr 2fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .page-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .event-card .event-banner {
+        height: 140px !important;
+    }
+    
+    /* View QR Modal */
+    #viewQrModal .modal-content {
+        padding: 2rem 1.5rem !important;
+    }
+    
+    #modalQrImage {
+        width: 180px !important;
+        height: 180px !important;
+    }
+}

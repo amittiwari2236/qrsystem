@@ -56,8 +56,41 @@ if(dateDisplay) {
     dateDisplay.innerText = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Mobile Menu Toggle
+document.addEventListener('DOMContentLoaded', () => {
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-open');
+        });
+    }
+    // Master Checkbox Logic
+    const masterCheckbox = document.getElementById('selectAllRegistrations');
+    if (masterCheckbox) {
+        masterCheckbox.addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+        });
+    }
+});
+
+// Close sidebar on mobile when a nav item is clicked
+function closeSidebarOnMobile() {
+    if (window.innerWidth <= 1024) {
+        document.body.classList.remove('sidebar-open');
+    }
+}
+
+// Override switchTab to include closing the sidebar
+const originalSwitchTab = switchTab;
+window.switchTab = function(tabId, el) {
+    originalSwitchTab(tabId, el);
+    closeSidebarOnMobile();
+};
+
 // ==========================================
 // API & DATA HANDLING
+
 // ==========================================
 
 let globalData = null;
@@ -508,6 +541,9 @@ async function loadRegistrations() {
 }
 
 function renderRegistrationsTable() {
+    const masterCheckbox = document.getElementById('selectAllRegistrations');
+    if (masterCheckbox) masterCheckbox.checked = false;
+
     const tbody = document.getElementById('registrationsTableBody');
     tbody.innerHTML = '';
 
@@ -533,6 +569,7 @@ function renderRegistrationsTable() {
             
             tbody.innerHTML += `
                 <tr>
+                    <td style="text-align: center;"><input type="checkbox" class="row-checkbox custom-checkbox" data-id="${row.scholarId}"></td>
                     <td style="font-family: monospace; color: var(--neon-cyan);">${displayId}</td>
                     <td style="font-weight:600;">${row.name || '-'}</td>
                     <td>${row.mobile || '-'}</td>
@@ -550,7 +587,7 @@ function renderRegistrationsTable() {
             `;
         });
     } else {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-secondary);">No matching registrations found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-secondary);">No matching registrations found.</td></tr>';
     }
 }
 
@@ -1031,9 +1068,137 @@ async function deleteSingleRegistration(scholarId) {
             loadRegistrations();
             loadEvents();
         } else {
-            alert('Failed to delete: ' + data.error);
+            alert('Delete failed');
         }
-    } catch(e) { alert('Connection error'); }
+    } catch(e) {
+        alert('Connection error');
+    }
 }
 
+// ==========================================
+// SELECTION-BASED DOWNLOAD (IMAGE/PDF)
+// ==========================================
 
+async function handleDownloadSelection() {
+    const selectedCbs = document.querySelectorAll('.row-checkbox:checked');
+    if (selectedCbs.length === 0) {
+        alert('Please select at least one record to download.');
+        return;
+    }
+
+    const selectedIds = Array.from(selectedCbs).map(cb => cb.getAttribute('data-id'));
+    // Filter against currentRegistrationsData (global state)
+    const selectedData = currentRegistrationsData.filter(r => selectedIds.includes(r.scholarId));
+
+    if (selectedData.length === 1) {
+        downloadSingleAsImage(selectedData[0]);
+    } else {
+        downloadMultipleAsPDF(selectedData);
+    }
+}
+
+async function downloadSingleAsImage(student) {
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '-9999px';
+    container.style.left = '-9999px';
+    container.style.width = '600px';
+    container.style.padding = '40px';
+    container.style.background = '#0f172a'; 
+    container.style.color = '#f8fafc';
+    container.style.fontFamily = "'Inter', sans-serif";
+    container.style.borderRadius = '16px';
+    container.style.border = '1px solid #1e40af';
+
+    const dateStr = new Date(student.timestamp).toLocaleDateString();
+
+    container.innerHTML = `
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #1e40af; padding-bottom: 20px;">
+            <h1 style="color: #60a5fa; margin: 0; font-size: 24px; text-transform: uppercase;">Registration Slip</h1>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 5px;">Event Management System</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Scholar ID</p>
+                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0; color: #38bdf8;">${student.scholarId || '-'}</p>
+                
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Student Name</p>
+                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${student.name || '-'}</p>
+                
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Course / Sem</p>
+                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${student.course || '-'} / ${student.semester || '-'}</p>
+            </div>
+            <div>
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Mobile</p>
+                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${student.mobile || '-'}</p>
+                
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Date</p>
+                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${dateStr}</p>
+                
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Status</p>
+                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0; color: ${student.attendance === 'Present' ? '#22c55e' : '#f59e0b'};">${student.attendance || 'Pending'}</p>
+            </div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; border-top: 1px solid #1e40af; padding-top: 15px;">
+            <p style="color: #60a5fa; font-size: 13px; margin: 0;">${student.email || '-'}</p>
+        </div>
+    `;
+
+    document.body.appendChild(container);
+
+    try {
+        const canvas = await html2canvas(container, {
+            backgroundColor: '#0f172a',
+            scale: 2
+        });
+        const link = document.createElement('a');
+        link.download = `Student_${student.scholarId || 'Record'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } catch (e) {
+        console.error(e);
+        alert('Export failed');
+    } finally {
+        document.body.removeChild(container);
+    }
+}
+
+function downloadMultipleAsPDF(students) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+
+    // Header styling matching reference
+    doc.setFillColor(15, 23, 42); 
+    doc.rect(0, 0, 297, 40, 'F');
+    
+    doc.setTextColor(96, 165, 250);
+    doc.setFontSize(22);
+    doc.text('REGISTRATIONS BULK REPORT', 148, 20, { align: 'center' });
+    
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(10);
+    doc.text(`Selected Records: ${students.length} | Export Date: ${new Date().toLocaleString()}`, 148, 30, { align: 'center' });
+
+    const tableData = students.map(s => [
+        s.scholarId || '-',
+        s.name || '-',
+        s.mobile || '-',
+        s.email || '-',
+        `${s.course || '-'} / ${s.semester || '-'}`,
+        new Date(s.timestamp).toLocaleDateString(),
+        s.attendance || 'Pending'
+    ]);
+
+    doc.autoTable({
+        head: [['Scholar ID', 'Name', 'Mobile', 'Email', 'Course / Sem', 'Date', 'Status']],
+        body: tableData,
+        startY: 45,
+        theme: 'grid',
+        headStyles: { fillColor: [29, 78, 216], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { top: 45 }
+    });
+
+    doc.save(`Registrations_Bulk_${new Date().getTime()}.pdf`);
+}

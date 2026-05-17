@@ -347,6 +347,58 @@
             border-color: rgba(0, 0, 0, 0.05);
         }
         [data-theme="light"] .success-title { color: #1e3a8a; }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .split-layout {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+            .left-panel {
+                width: 100%;
+                padding: 2rem 1.5rem;
+                display: block; /* overriding flex */
+                overflow-y: visible;
+            }
+            .right-panel {
+                width: 100%;
+                padding: 2rem 1.5rem;
+                display: block;
+                overflow-y: visible;
+            }
+            .poster-card {
+                padding: 2rem 1.5rem;
+            }
+            .poster-title {
+                font-size: 3rem;
+            }
+            .poster-milan {
+                font-size: 1rem;
+            }
+            .poster-desc {
+                font-size: 1rem;
+                padding: 0 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .poster-title {
+                font-size: 2.2rem;
+            }
+            .poster-date {
+                font-size: 1.2rem;
+            }
+            .glass-card {
+                padding: 2rem 1.5rem;
+            }
+            form > div[style*="display: flex; gap: 10px; margin-top: 20px;"] {
+                flex-direction: column;
+            }
+            form > div[style*="display: flex; gap: 15px; margin-top: 20px;"] {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
