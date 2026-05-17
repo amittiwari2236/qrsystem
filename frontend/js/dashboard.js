@@ -614,7 +614,7 @@ function openEventQrModal(adminId, eventName, date) {
     const linkEl = document.getElementById('modalQrPortalLink');
     if(linkEl) {
         linkEl.href = portalUrl;
-        linkEl.innerText = portalUrl;
+        linkEl.innerText = `${window.location.origin}/user.html`;
         linkEl.style.display = 'inline-block';
     }
     
@@ -1026,9 +1026,7 @@ async function handleManualEntry(e) {
     btn.textContent = 'Save Student';
 }
 
-// ==========================================
 // BULK DELETE RECORDS
-// ==========================================
 async function bulkDeleteEventRecords() {
     const adminId = window.currentTargetAdminId;
     if(!adminId) return;
@@ -1102,82 +1100,123 @@ async function downloadSingleAsImage(student) {
     container.style.position = 'fixed';
     container.style.top = '-9999px';
     container.style.left = '-9999px';
-    container.style.width = '600px';
-    container.style.padding = '40px';
-    container.style.background = '#0f172a'; 
-    container.style.color = '#f8fafc';
+    container.style.width = '650px';
+    container.style.padding = '0'; // Padding moved to inner elements
+    container.style.background = '#ffffff'; 
+    container.style.color = '#0f172a';
     container.style.fontFamily = "'Inter', sans-serif";
     container.style.borderRadius = '16px';
-    container.style.border = '1px solid #1e40af';
+    container.style.border = '1px solid #1e3a8a';
+    container.style.overflow = 'hidden';
+    container.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
 
     const dateStr = new Date(student.timestamp).toLocaleDateString();
+    const displayId = student.scholarId || student.registrationId || '-';
+    // Solid black QR code
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(displayId)}&color=000000&bgcolor=ffffff`;
 
     container.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #1e40af; padding-bottom: 20px;">
-            <h1 style="color: #60a5fa; margin: 0; font-size: 24px; text-transform: uppercase;">Registration Slip</h1>
-            <p style="color: #94a3b8; font-size: 14px; margin-top: 5px;">Event Management System</p>
+        <div style="text-align: center; background: #0f172a; padding: 25px 20px; border-bottom: 3px solid #1e3a8a;">
+            <h1 style="color: #60a5fa; margin: 0; font-size: 26px; text-transform: uppercase; letter-spacing: 1px;">Registration Slip</h1>
+            <p style="color: #94a3b8; font-size: 13px; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px;">Event Management System</p>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Scholar ID</p>
-                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0; color: #38bdf8;">${student.scholarId || '-'}</p>
-                
-                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Student Name</p>
-                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${student.name || '-'}</p>
-                
-                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Course / Sem</p>
-                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${student.course || '-'} / ${student.semester || '-'}</p>
+        <div style="display: flex; padding: 35px; align-items: center; gap: 30px;">
+            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                <div>
+                    <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Scholar ID</p>
+                    <p style="font-size: 18px; font-weight: 800; margin: 5px 0; color: #0ea5e9;">${displayId}</p>
+                </div>
+                <div>
+                    <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Mobile</p>
+                    <p style="font-size: 17px; font-weight: 700; margin: 5px 0;">${student.mobile || '-'}</p>
+                </div>
+                <div>
+                    <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Student Name</p>
+                    <p style="font-size: 17px; font-weight: 700; margin: 5px 0;">${student.name || '-'}</p>
+                </div>
+                <div>
+                    <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Date</p>
+                    <p style="font-size: 17px; font-weight: 700; margin: 5px 0;">${dateStr}</p>
+                </div>
+                <div>
+                    <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Course / Sem</p>
+                    <p style="font-size: 17px; font-weight: 700; margin: 5px 0;">${student.course || '-'} / ${student.semester || '-'}</p>
+                </div>
+                <div>
+                    <p style="color: #64748b; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Status</p>
+                    <p style="font-size: 17px; font-weight: 800; margin: 5px 0; color: ${student.attendance === 'Present' ? '#16a34a' : '#ca8a04'};">${student.attendance || 'Pending'}</p>
+                </div>
             </div>
-            <div>
-                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Mobile</p>
-                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${student.mobile || '-'}</p>
-                
-                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Date</p>
-                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0;">${dateStr}</p>
-                
-                <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Status</p>
-                <p style="font-size: 16px; font-weight: 700; margin: 5px 0 20px 0; color: ${student.attendance === 'Present' ? '#22c55e' : '#f59e0b'};">${student.attendance || 'Pending'}</p>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding-left: 30px; border-left: 2px dashed #cbd5e1;">
+                <img src="${qrUrl}" crossorigin="anonymous" style="width: 130px; height: 130px; border-radius: 8px; border: 2px solid #e2e8f0; padding: 5px; background: white; object-fit: contain;" />
+                <p style="color: #64748b; font-size: 10px; margin-top: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Scan to Verify</p>
             </div>
         </div>
-        <div style="margin-top: 20px; text-align: center; border-top: 1px solid #1e40af; padding-top: 15px;">
-            <p style="color: #60a5fa; font-size: 13px; margin: 0;">${student.email || '-'}</p>
+        <div style="text-align: center; padding: 15px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+            <p style="color: #0ea5e9; font-size: 14px; margin: 0; font-weight: 600;">${student.email || '-'}</p>
         </div>
     `;
 
     document.body.appendChild(container);
+    
+    // Wait slightly longer to ensure QR image is fully loaded before html2canvas processes it
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
         const canvas = await html2canvas(container, {
-            backgroundColor: '#0f172a',
-            scale: 2
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            allowTaint: true
         });
         const link = document.createElement('a');
-        link.download = `Student_${student.scholarId || 'Record'}.png`;
+        link.download = `Student_${displayId}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     } catch (e) {
         console.error(e);
-        alert('Export failed');
+        alert('Export failed. Please check network connection for QR code generation.');
     } finally {
         document.body.removeChild(container);
     }
 }
 
-function downloadMultipleAsPDF(students) {
+async function downloadMultipleAsPDF(students) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('l', 'mm', 'a4');
 
-    // Header styling matching reference
-    doc.setFillColor(15, 23, 42); 
+    // Header styling matching premium blue tone from reference
+    doc.setFillColor(30, 58, 138); // Deep rich blue
     doc.rect(0, 0, 297, 40, 'F');
     
-    doc.setTextColor(96, 165, 250);
+    // Add fully white header text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.text('REGISTRATIONS BULK REPORT', 148, 20, { align: 'center' });
     
-    doc.setTextColor(148, 163, 184);
+    doc.setTextColor(203, 213, 225); // Slate-300 for readable subtitle
     doc.setFontSize(10);
     doc.text(`Selected Records: ${students.length} | Export Date: ${new Date().toLocaleString()}`, 148, 30, { align: 'center' });
+
+    // Load and add DSVV Logo
+    const addLogo = () => {
+        return new Promise((resolve) => {
+            const logoImg = new Image();
+            logoImg.crossOrigin = "Anonymous";
+            logoImg.src = 'https://dsvv.s3.ap-south-1.amazonaws.com/uploads/2023/03/DSVV_LOGO_PNG.png';
+            logoImg.onload = () => {
+                // Dimensions adjusted to fit left corner gracefully (30x30)
+                doc.addImage(logoImg, 'PNG', 15, 5, 30, 30);
+                resolve();
+            };
+            logoImg.onerror = () => {
+                console.warn('Could not load logo for PDF');
+                resolve();
+            };
+        });
+    };
+
+    await addLogo();
 
     const tableData = students.map(s => [
         s.scholarId || '-',
@@ -1193,10 +1232,49 @@ function downloadMultipleAsPDF(students) {
         head: [['Scholar ID', 'Name', 'Mobile', 'Email', 'Course / Sem', 'Date', 'Status']],
         body: tableData,
         startY: 45,
-        theme: 'grid',
-        headStyles: { fillColor: [29, 78, 216], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
+        theme: 'plain',
+        styles: { 
+            font: 'helvetica',
+            cellPadding: 4,
+            fontSize: 10,
+        },
+        headStyles: { 
+            textColor: [71, 85, 105],
+            fontSize: 9,
+            fontStyle: 'bold',
+            fillColor: [248, 250, 252],
+            lineWidth: { bottom: 0.5 },
+            lineColor: [226, 232, 240],
+            textTransform: 'uppercase'
+        },
+        bodyStyles: {
+            textColor: [30, 41, 59],
+            lineWidth: { bottom: 0.1 },
+            lineColor: [226, 232, 240]
+        },
+        didParseCell: function(data) {
+            if (data.section === 'body') {
+                if (data.column.index === 0) {
+                    data.cell.styles.font = 'courier';
+                    data.cell.styles.textColor = [14, 165, 233];
+                }
+                if (data.column.index === 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                if (data.column.index === 3) {
+                    data.cell.styles.textColor = [14, 165, 233];
+                }
+                if (data.column.index === 6) {
+                    const status = data.cell.raw;
+                    data.cell.styles.fontStyle = 'bold';
+                    if (status === 'Present') {
+                        data.cell.styles.textColor = [22, 163, 74];
+                    } else {
+                        data.cell.styles.textColor = [202, 138, 4];
+                    }
+                }
+            }
+        },
         margin: { top: 45 }
     });
 
