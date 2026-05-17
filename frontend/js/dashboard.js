@@ -105,7 +105,7 @@ async function fetchUnifiedData(force = false) {
     }
 
     try {
-        const res = await fetch('http://localhost:3000/api/admin/analytics');
+        const res = await fetch('http://qrsystem-icqn.onrender.com/api/admin/analytics');
         if(!res.ok) throw new Error('Network error');
         globalData = await res.json();
         lastFetchTime = Date.now();
@@ -362,7 +362,7 @@ document.getElementById('createEventForm').addEventListener('submit', async (e) 
     }
 
     try {
-        const res = await fetch('http://localhost:3000/api/admin/create-card', { 
+        const res = await fetch('http://qrsystem-icqn.onrender.com/api/admin/create-card', { 
             method: 'POST', 
             body: formData 
         });
@@ -391,7 +391,7 @@ document.getElementById('createEventForm').addEventListener('submit', async (e) 
 async function deleteEvent(id) {
     if(!confirm('Are you sure you want to delete this event? The Google Sheet tab will also be deleted.')) return;
     try {
-        await fetch(`http://localhost:3000/api/admin/event/${id}`, { method: 'DELETE' });
+        await fetch(`http://qrsystem-icqn.onrender.com/api/admin/event/${id}`, { method: 'DELETE' });
         
         // If the deleted event was currently selected in Registrations tab, reset it
         if (window.currentTargetAdminId === id) {
@@ -422,7 +422,7 @@ function triggerImageUpdate(adminId) {
         formData.append('image', file);
 
         try {
-            const res = await fetch(`http://localhost:3000/api/admin/event/${adminId}/image`, {
+            const res = await fetch(`http://qrsystem-icqn.onrender.com/api/admin/event/${adminId}/image`, {
                 method: 'PUT',
                 body: formData
             });
@@ -458,7 +458,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     btn.innerText = 'Extracting...'; btn.disabled = true;
 
     try {
-        const res = await fetch(`http://localhost:3000/api/events/upload/${adminId}`, {
+        const res = await fetch(`http://qrsystem-icqn.onrender.com/api/events/upload/${adminId}`, {
             method: 'POST',
             body: formData
         });
@@ -528,7 +528,7 @@ async function loadRegistrations() {
     }
 
     try {
-        const res = await fetch(`http://localhost:3000/api/admin/dashboard/${targetAdminId}`);
+        const res = await fetch(`http://qrsystem-icqn.onrender.com/api/admin/dashboard/${targetAdminId}`);
         if (res.status === 404) {
             window.currentTargetAdminId = null;
             if (globalData && globalData.events.length > 0) return loadRegistrations();
@@ -721,7 +721,7 @@ document.getElementById('verifyIdForm').addEventListener('submit', async (e) => 
     btn.innerText = 'Searching...'; btn.disabled = true;
 
     try {
-        const res = await fetch('http://localhost:3000/api/admin/verify', {
+        const res = await fetch('http://qrsystem-icqn.onrender.com/api/admin/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ searchId })
@@ -839,7 +839,7 @@ function exportReport(format) {
 // ==========================================
 async function loadNotifications() {
     try {
-        const res = await fetch('http://localhost:3000/api/admin/notifications');
+        const res = await fetch('http://qrsystem-icqn.onrender.com/api/admin/notifications');
         const data = await res.json();
         renderNotifications(data.notifications, 'all');
     } catch(e) { console.error(e); }
@@ -883,13 +883,13 @@ function renderNotifications(notifs, filter) {
 
 async function markAllNotificationsRead() {
     try {
-        await fetch('http://localhost:3000/api/admin/notifications/read-all', { method: 'POST' });
+        await fetch('http://qrsystem-icqn.onrender.com/api/admin/notifications/read-all', { method: 'POST' });
         loadNotifications();
     } catch(e) {}
 }
 
 async function filterNotifications(filter) {
-    const res = await fetch('http://localhost:3000/api/admin/notifications');
+    const res = await fetch('http://qrsystem-icqn.onrender.com/api/admin/notifications');
     const data = await res.json();
     renderNotifications(data.notifications, filter);
 }
@@ -986,7 +986,7 @@ async function handleManualEntry(e) {
     btn.textContent = 'Saving...';
 
     try {
-        const res = await fetch(`http://localhost:3000/api/admin/event/${adminId}/manual-entry`, {
+        const res = await fetch(`http://qrsystem-icqn.onrender.com/api/admin/event/${adminId}/manual-entry`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1036,7 +1036,7 @@ async function bulkDeleteEventRecords() {
     if(!confirm('Are you sure you want to delete?')) return;
 
     try {
-        const res = await fetch(`http://localhost:3000/api/admin/event/${adminId}/records`, {
+        const res = await fetch(`http://qrsystem-icqn.onrender.com/api/admin/event/${adminId}/records`, {
             method: 'DELETE'
         });
         const data = await res.json();
@@ -1062,7 +1062,7 @@ async function deleteSingleRegistration(scholarId) {
     if(!confirm('Are you sure you want to delete?')) return;
 
     try {
-        const res = await fetch(`http://localhost:3000/api/admin/event/${adminId}/record/${scholarId}`, { method: 'DELETE' });
+        const res = await fetch(`http://qrsystem-icqn.onrender.com/api/admin/event/${adminId}/record/${scholarId}`, { method: 'DELETE' });
         const data = await res.json();
         if(res.ok) {
             loadRegistrations();
