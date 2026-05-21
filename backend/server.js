@@ -7,6 +7,10 @@ const connectDB = require('./config/db');
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 require('./config/googleConfig'); // Ensure Google config is loaded
 
+// Verify mail transporter on startup
+const mailService = require('./services/mailService');
+const reminderService = require('./services/reminderService');
+
 // Connect to MongoDB
 connectDB();
 const app = express();
@@ -48,4 +52,12 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    
+    // Verify mail transporter on server startup
+    mailService.verifyTransporter().catch(err => {
+        console.warn('⚠ Mail service initialization warning:', err);
+    });
+
+    // Start reminder email scheduler
+    reminderService.startReminderScheduler();
 });

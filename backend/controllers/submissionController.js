@@ -1,4 +1,5 @@
 const googleSheetsService = require('../services/googleSheetsService');
+const mailService = require('../services/mailService');
 const Event = require('../models/Event');
 const Student = require('../models/Student');
 const Registration = require('../models/Registration');
@@ -48,7 +49,18 @@ exports.submitRegistration = async (req, res) => {
             console.error('Failed to sync "Present" status to Google Sheets:', sheetError.message);
         }
 
-        // 6. Emit Real-time WebSocket Event
+        // 6. Send welcome email to user and admin notification (Non-blocking)
+        try {
+            await Promise.all([
+                mailService.sendUserWelcomeEmail(existingReg, eventData),
+                mailService.sendAdminNotificationEmail(existingReg, eventData)
+            ]);
+        } catch (emailError) {
+            console.error('Error sending registration emails:', emailError.message);
+            // Don't fail registration if emails fail - log and continue
+        }
+
+        // 7. Emit Real-time WebSocket Event
         const io = req.app.get('socketio');
         if (io) {
             io.emit('newSubmission', { eventId: actualEventId, scholarId, totalScans: eventData.registrationsCount });

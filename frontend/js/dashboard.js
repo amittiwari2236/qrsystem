@@ -622,7 +622,6 @@ function openEventQrModal(adminId, eventName, date) {
 }
 
 async function downloadModalQr() {
-    const modalContent = document.querySelector('#viewQrModal .modal-content');
     const scholarId = document.getElementById('modalQrId').innerText || 'QR_Code';
     
     // Select the download button to show loading state
@@ -632,63 +631,138 @@ async function downloadModalQr() {
     btn.disabled = true;
 
     try {
-        // Use html2canvas to capture the full card aesthetic with custom overrides for the export
-        const canvas = await html2canvas(modalContent, {
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null,
-            scale: 3, // Ultra-high resolution
-            logging: false,
-            onclone: (clonedDoc) => {
-                // 1. Remove Background Image strictly from Export
-                const clonedBg = clonedDoc.getElementById('modalQrBg');
-                if (clonedBg) {
-                    clonedBg.style.display = 'none';
-                }
+        // Get the original QR URL
+        const qrImageSrc = document.getElementById('modalQrImage').src;
+        
+        // Fetch and convert the QR image to a proper data URL
+        const qrResponse = await fetch(qrImageSrc);
+        const qrBlob = await qrResponse.blob();
+        const qrDataUrl = URL.createObjectURL(qrBlob);
+        
+        // Create a temporary container that mimics the modal but without problematic elements
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: -9999px;
+            width: 600px;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: none;
+            text-align: center;
+            z-index: 1;
+        `;
 
-                // 2. Apply solid background to the card for clean export
-                const clonedContent = clonedDoc.querySelector('#viewQrModal .modal-content');
-                if (clonedContent) {
-                    clonedContent.style.background = '#ffffff';
-                    clonedContent.style.boxShadow = 'none';
-                    clonedContent.style.border = '1px solid #e2e8f0';
-                }
+        // Add header
+        const headerEl = document.createElement('h2');
+        headerEl.textContent = document.getElementById('modalQrHeader').innerText;
+        headerEl.style.cssText = `
+            color: #0284c7;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        `;
+        tempContainer.appendChild(headerEl);
 
-                // 3. Styling overrides for the clean white export image
-                const header = clonedDoc.getElementById('modalQrHeader');
-                const id = clonedDoc.getElementById('modalQrId');
-                const name = clonedDoc.getElementById('modalQrName');
-                const course = clonedDoc.getElementById('modalQrCourse');
-                const qrImg = clonedDoc.getElementById('modalQrImage');
+        // Add QR container with proper styling
+        const qrContainer = document.createElement('div');
+        qrContainer.style.cssText = `
+            background: white;
+            padding: 20px;
+            border-radius: 18px;
+            display: inline-block;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.1);
+        `;
 
-                if (header) {
-                    header.style.color = '#0284c7'; 
-                    header.style.textShadow = 'none';
-                }
-                if (id) {
-                    id.style.color = '#0284c7';
-                    id.style.fontWeight = '900';
-                    id.style.textShadow = 'none';
-                }
-                if (name) {
-                    name.style.color = '#1e293b'; // Dark blue/black for name
-                    name.style.fontWeight = '800';
-                    name.style.textShadow = 'none';
-                }
-                if (course) {
-                    course.style.color = '#64748b'; // Slate grey for details
-                    course.style.fontWeight = '600';
-                    course.style.opacity = '1';
-                }
-                if (qrImg) {
-                    qrImg.style.filter = 'contrast(1.2)';
-                    qrImg.parentElement.style.background = '#ffffff';
-                    qrImg.parentElement.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
-                    qrImg.parentElement.style.border = '1px solid #f1f5f9';
-                }
-            }
+        // Create a fresh QR image with the proper blob URL
+        const qrImg = document.createElement('img');
+        qrImg.src = qrDataUrl;
+        qrImg.style.cssText = `
+            width: 220px;
+            height: 220px;
+            display: block;
+            background: white;
+        `;
+        
+        // Wait for image to load
+        await new Promise((resolve, reject) => {
+            qrImg.onload = resolve;
+            qrImg.onerror = reject;
+            // Force timeout after 3 seconds
+            setTimeout(reject, 3000);
         });
         
+        qrContainer.appendChild(qrImg);
+        tempContainer.appendChild(qrContainer);
+
+        // Add Scholar ID
+        const idEl = document.createElement('h3');
+        idEl.textContent = document.getElementById('modalQrId').innerText;
+        idEl.style.cssText = `
+            color: #0284c7;
+            font-family: monospace;
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            font-weight: 800;
+            margin-top: 0;
+        `;
+        tempContainer.appendChild(idEl);
+
+        // Add Name
+        const nameEl = document.createElement('p');
+        nameEl.textContent = document.getElementById('modalQrName').innerText;
+        nameEl.style.cssText = `
+            color: #1e293b;
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 8px;
+            letter-spacing: -0.2px;
+            margin-top: 0;
+        `;
+        tempContainer.appendChild(nameEl);
+
+        // Add Course
+        const courseEl = document.createElement('p');
+        courseEl.textContent = document.getElementById('modalQrCourse').innerText;
+        courseEl.style.cssText = `
+            color: #64748b;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-top: 0;
+        `;
+        tempContainer.appendChild(courseEl);
+
+        // Add the temporary container to the DOM
+        document.body.appendChild(tempContainer);
+
+        // Wait for html2canvas to process everything
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Use html2canvas to capture this clean container
+        const canvas = await html2canvas(tempContainer, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            scale: 2,
+            logging: false,
+            canvas: null,
+            foreignObjectRendering: true,
+            imageTimeout: 3000
+        });
+
+        // Remove the temporary container and clean up
+        document.body.removeChild(tempContainer);
+        URL.revokeObjectURL(qrDataUrl);
+
+        // Convert to image and download
         const url = canvas.toDataURL('image/png', 1.0);
         const a = document.createElement('a');
         a.href = url;
@@ -696,14 +770,25 @@ async function downloadModalQr() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+
     } catch (err) {
-        console.error('Full card capture failed:', err);
-        // Fallback to direct image download if canvas fails
-        const qrUrl = document.getElementById('modalQrImage').src;
-        const a = document.createElement('a');
-        a.href = qrUrl;
-        a.download = `${scholarId}_QR_Only.png`;
-        a.click();
+        console.error('QR card export failed:', err);
+        // Fallback: Download QR directly as solid black image
+        try {
+            const qrUrl = document.getElementById('modalQrImage').src;
+            // Direct download of QR from API with proper parameters for solid black
+            const directQrUrl = qrUrl.includes('color=') ? qrUrl : qrUrl + (qrUrl.includes('?') ? '&' : '?') + 'color=000000&bgcolor=ffffff';
+            const a = document.createElement('a');
+            a.href = directQrUrl;
+            a.download = `${scholarId}_QR_Code.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            console.log('Fallback: Downloaded QR image directly');
+        } catch (fallbackErr) {
+            console.error('Fallback also failed:', fallbackErr);
+            alert('Failed to generate QR card. Please try again.');
+        }
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
