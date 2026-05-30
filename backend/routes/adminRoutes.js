@@ -24,12 +24,25 @@ router.get('/analytics', adminController.getUnifiedAnalytics);
 // Delete Event
 router.delete('/event/:adminId', adminController.deleteEvent);
 
+// Request Feedback
+router.post('/event/:adminId/request-feedback', adminController.requestFeedback);
+
 // Update Event Image
 router.put('/event/:adminId/image', upload.single('image'), adminController.updateEventImage);
+
+// Admin Profile
+router.get('/profile', adminController.getProfile);
+router.put('/profile', upload.single('profilePhoto'), adminController.updateProfile);
+
+// Password Change Flow
+router.post('/change-password-request', adminController.requestPasswordChange);
+router.get('/confirm-password-change', adminController.confirmPasswordChange);
 
 // Notifications
 router.get('/notifications', adminController.getNotifications);
 router.post('/notifications/read-all', adminController.markAllNotificationsRead);
+router.delete('/notifications', adminController.deleteAllNotifications);
+router.delete('/notification/:id', adminController.deleteSingleNotification);
 
 // Unified event records management
 router.delete('/event/:adminId/records', adminController.deleteEventRecords);

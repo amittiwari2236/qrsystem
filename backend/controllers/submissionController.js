@@ -30,11 +30,13 @@ exports.submitRegistration = async (req, res) => {
             return res.status(400).json({ error: 'You are already registered/present for this event.' });
         }
 
+        const ipAddress = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.connection?.remoteAddress || 'Unknown IP';
         const timestamp = new Date().toISOString();
 
         // 4. Update MongoDB to 'Present'
         existingReg.attendance = 'Present';
         existingReg.timestamp = timestamp;
+        existingReg.ipAddress = ipAddress;
         
         // Ensure venue and time are present for validation
         if (!existingReg.venue) existingReg.venue = eventData.venue || 'Main Venue';

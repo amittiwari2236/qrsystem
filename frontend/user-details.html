@@ -11,46 +11,25 @@
     <script>
         // Apply theme immediately to prevent flicker
         (function() {
-            const savedTheme = localStorage.getItem('user-theme') || 'dark';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             
             // Set initial poster logo
             const darkLogo = "https://dsvv.s3.ap-south-1.amazonaws.com/uploads/2023/03/DSVV_LOGO_PNG.png";
             const lightLogo = "https://www.addressguru.in/images/1801593532.png";
             
+            function isLightTheme(theme) {
+                const lightThemes = ['light', 'premium-blue-light', 'soft-gray-light', 'warm-cream', 'modern-white'];
+                return lightThemes.includes(theme);
+            }
+            
             window.addEventListener('DOMContentLoaded', () => {
                 const logo = document.getElementById('posterLogo');
-                if (logo) logo.src = savedTheme === 'light' ? lightLogo : darkLogo;
+                if (logo) logo.src = isLightTheme(savedTheme) ? lightLogo : darkLogo;
             });
         })();
     </script>
     <style>
-        :root {
-            --bg-deep-blue: #0b1121;
-            --bg-panel: #151f38;
-            --bg-card: #1c2645;
-            --neon-cyan: #06b6d4;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --glass-border: rgba(255, 255, 255, 0.05);
-            --poster-bg: #0a1128;
-            --poster-text: #ffffff;
-            --poster-label: #64748b;
-        }
-
-        [data-theme="light"] {
-            --bg-deep-blue: #f1f5f9;
-            --bg-panel: #ffffff;
-            --bg-card: #ffffff;
-            --neon-cyan: #0891b2;
-            --text-primary: #1e3a8a;
-            --text-secondary: #64748b;
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --poster-bg: #ffffff;
-            --poster-text: #1e3a8a;
-            --poster-label: #64748b;
-        }
-
         body, html {
             margin: 0;
             padding: 0;
@@ -189,6 +168,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            min-height: 0;
             align-items: center;
             width: 100%;
         }
@@ -233,13 +213,34 @@
             color: var(--poster-text);
             line-height: 1.6;
             margin-bottom: 2rem;
-            padding: 0 2rem;
+            padding: 0 2rem 0 2rem;
             font-family: 'Inter', sans-serif;
             white-space: pre-wrap;
             text-align: center;
-            max-height: 150px;
+            flex-grow: 1;
             overflow-y: auto;
-            scrollbar-width: none;
+            min-height: 0;
+            width: 100%;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.3) transparent;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Custom Scrollbar for Poster Description */
+        .poster-desc::-webkit-scrollbar {
+            width: 6px;
+        }
+        .poster-desc::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .poster-desc::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 10px;
+        }
+        [data-theme="light"] .poster-desc::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
         }
 
         .poster-info-label {
@@ -422,7 +423,7 @@
 
     <div class="split-layout">
         <div class="left-panel">
-            <div class="glass-card">
+            <div class="glass-card" style="position: relative; z-index: 10;">
                 <h2>Confirm Details</h2>
                 <form id="registrationConfirmForm">
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -510,16 +511,20 @@
     <script src="./js/user-details.js"></script>
     <script>
         document.getElementById('themeToggle').addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            const lightThemes = ['light', 'premium-blue-light', 'soft-gray-light', 'warm-cream', 'modern-white'];
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = lightThemes.includes(currentTheme) ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('user-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
             
             // Swap Poster Logo
             const logo = document.getElementById('posterLogo');
             const darkLogo = "https://dsvv.s3.ap-south-1.amazonaws.com/uploads/2023/03/DSVV_LOGO_PNG.png";
             const lightLogo = "https://www.addressguru.in/images/1801593532.png";
-            if (logo) logo.src = newTheme === 'light' ? lightLogo : darkLogo;
+            function isLightTheme(theme) {
+                return lightThemes.includes(theme);
+            }
+            if (logo) logo.src = isLightTheme(newTheme) ? lightLogo : darkLogo;
         });
     </script>
 </body>

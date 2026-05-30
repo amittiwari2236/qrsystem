@@ -12,6 +12,7 @@ const registrationSchema = new mongoose.Schema({
     venue: { type: String, required: false, default: 'Main Venue' },
     time: { type: String, required: false, default: '10:00 AM' },
     attendance: { type: String, default: 'Pending' },
+    ipAddress: { type: String, default: 'Unknown IP' },
     timestamp: { type: Date, default: Date.now }
 });
 

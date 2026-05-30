@@ -10,6 +10,7 @@ const eventSchema = new mongoose.Schema({
     spreadsheetId: { type: String, required: true },
     sheetName: { type: String, required: true },
     email: { type: String, required: false },
+    feedbackEmailsSent: { type: Number, default: 0 },
     date: { type: String, required: true },
     time: { type: String, default: '10:00 AM' },
     venue: { type: String, default: 'Main Hall' },

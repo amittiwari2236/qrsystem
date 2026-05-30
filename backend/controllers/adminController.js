@@ -6,13 +6,25 @@ const Event = require('../models/Event');
 const QRData = require('../models/QRData');
 const Notification = require('../models/Notification');
 
+const Admin = require('../models/Admin');
+
 exports.login = async (req, res) => {
-    const { email, password } = req.body;
-    
-    if (email === 'amittiwari2236@gmail.com' && password === 'Scholar@1910') {
-        return res.status(200).json({ message: 'Login successful' });
-    } else {
-        return res.status(401).json({ error: 'Invalid Email or Password' });
+    try {
+        const { email, password } = req.body;
+        
+        const admin = await Admin.findOne({ email });
+        if (admin && admin.password === password) {
+            return res.status(200).json({ message: 'Login successful' });
+        } else {
+            // Fallback for static default credentials
+            if (email === 'amittiwari2236@gmail.com' && password === 'Scholar@1910') {
+                return res.status(200).json({ message: 'Login successful' });
+            }
+            return res.status(401).json({ error: 'Invalid Email or Password' });
+        }
+    } catch (err) {
+        console.error('Login controller error:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -443,5 +455,222 @@ exports.verifyRegistration = async (req, res) => {
     } catch (error) {
         console.error('Error verifying registration:', error);
         res.status(500).json({ error: 'Failed to verify registration' });
+    }
+};
+
+// Admin Profile Endpoints
+exports.getProfile = async (req, res) => {
+    try {
+        let admin = await Admin.findOne();
+        if (!admin) {
+            admin = new Admin({
+                name: 'Amit Tiwari',
+                email: 'amittiwari2236@gmail.com',
+                password: 'Scholar@1910',
+                designation: 'Super Admin'
+            });
+            await admin.save();
+        }
+        res.status(200).json(admin);
+    } catch (error) {
+        console.error('Error getting profile:', error);
+        res.status(500).json({ error: 'Failed to fetch admin profile' });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        let admin = await Admin.findOne();
+        if (!admin) {
+            admin = new Admin({
+                name: 'Amit Tiwari',
+                email: 'amittiwari2236@gmail.com',
+                password: 'Scholar@1910',
+                designation: 'Super Admin'
+            });
+        }
+
+        const { name, email, phone, department, designation, bio } = req.body;
+
+        if (name !== undefined) admin.name = name;
+        if (email !== undefined) admin.email = email;
+        if (phone !== undefined) admin.phone = phone;
+        if (department !== undefined) admin.department = department;
+        if (designation !== undefined) admin.designation = designation;
+        if (bio !== undefined) admin.bio = bio;
+
+        if (req.file) {
+            const uploadResult = await cloudinaryService.uploadImage(
+                req.file.buffer,
+                'profiles',
+                `admin_avatar_${admin._id}`
+            );
+            admin.profilePhoto = uploadResult.secure_url;
+        }
+
+        await admin.save();
+        res.status(200).json({ message: 'Profile updated successfully!', data: admin });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({ error: 'Failed to update admin profile' });
+    }
+};
+
+// Password Change Verification Loop
+exports.requestPasswordChange = async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ error: 'Old password and new password are required.' });
+        }
+
+        const admin = await Admin.findOne();
+        if (!admin) {
+            return res.status(404).json({ error: 'Admin not found.' });
+        }
+
+        if (admin.password !== oldPassword) {
+            return res.status(400).json({ error: 'Incorrect current password.' });
+        }
+
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(20).toString('hex');
+
+        admin.tempPasswordResetToken = token;
+        admin.tempNewPassword = newPassword;
+        await admin.save();
+
+        const mailService = require('../services/mailService');
+        const confirmUrl = `${req.protocol}://${req.get('host')}/api/admin/confirm-password-change?token=${token}`;
+
+        await mailService.sendPasswordChangeRequestEmail(admin.email, confirmUrl);
+
+        res.status(200).json({ message: 'A verification link has been sent to your registered Gmail address. Please confirm the change from your email.' });
+    } catch (error) {
+        console.error('Error requesting password change:', error);
+        res.status(500).json({ error: 'Failed to request password change.' });
+    }
+};
+
+exports.confirmPasswordChange = async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            return res.status(400).send('<h1>Error</h1><p>Confirmation token is missing.</p>');
+        }
+
+        const admin = await Admin.findOne({ tempPasswordResetToken: token });
+        if (!admin) {
+            return res.status(400).send('<h1>Error</h1><p>Invalid or expired confirmation link.</p>');
+        }
+
+        admin.password = admin.tempNewPassword;
+        admin.tempNewPassword = '';
+        admin.tempPasswordResetToken = '';
+        await admin.save();
+
+        const mailService = require('../services/mailService');
+        await mailService.sendPasswordChangedSuccessEmail(admin.email);
+
+        res.status(200).send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Password Updated successfully</title>
+                <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #cbd5e1; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+                    .success-card { background: #0f172a; padding: 3rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); text-align: center; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+                    .success-icon { font-size: 4rem; color: #10b981; margin-bottom: 1.5rem; }
+                    h1 { font-size: 2rem; color: #ffffff; margin-bottom: 1rem; }
+                    p { font-size: 1rem; color: #94a3b8; line-height: 1.6; margin-bottom: 2rem; }
+                    .btn { background: #2563eb; color: white; padding: 12px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; display: inline-block; transition: background 0.3s; }
+                    .btn:hover { background: #1d4ed8; }
+                </style>
+            </head>
+            <body>
+                <div class="success-card">
+                    <div class="success-icon">✓</div>
+                    <h1>Password Changed!</h1>
+                    <p>Your password has been successfully updated in our database. A final confirmation email has been sent. You can now close this tab and log in using your new password.</p>
+                    <a href="/index.html" class="btn">Go to Login</a>
+                </div>
+            </body>
+            </html>
+        `);
+    } catch (error) {
+        console.error('Error confirming password change:', error);
+        res.status(500).send('<h1>Server Error</h1><p>An error occurred while confirming your password change.</p>');
+    }
+};
+
+// Notification Deletion Controllers
+exports.deleteAllNotifications = async (req, res) => {
+    try {
+        await Notification.deleteMany({});
+        res.status(200).json({ message: 'All notifications deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting all notifications:', error);
+        res.status(500).json({ error: 'Failed to delete notifications.' });
+    }
+};
+
+exports.deleteSingleNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Notification.findByIdAndDelete(id);
+        res.status(200).json({ message: 'Notification deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting notification:', error);
+        res.status(500).json({ error: 'Failed to delete notification.' });
+    }
+};
+
+exports.requestFeedback = async (req, res) => {
+    try {
+        const { adminId } = req.params;
+        const { theme } = req.body || {};
+        const event = await Event.findOne({ adminId });
+        if (!event) return res.status(404).json({ error: 'Event not found.' });
+
+        const Registration = require('../models/Registration');
+        const presentStudents = await Registration.find({ eventId: event.eventId, attendance: 'Present' });
+
+        if (presentStudents.length === 0) {
+            return res.status(400).json({ error: 'No students marked as "Present" for this event.' });
+        }
+
+        const mailService = require('../services/mailService');
+        
+        let sentCount = 0;
+        const emailPromises = presentStudents.map(async (student) => {
+            try {
+                await mailService.sendFeedbackRequestEmail(student, event, 'light');
+                sentCount++;
+            } catch (err) {
+                console.error(`Failed to send feedback email to ${student.email}:`, err.message);
+            }
+        });
+
+        await Promise.all(emailPromises);
+
+        // Also log to Notification
+        const Notification = require('../models/Notification');
+        await Notification.create({
+            type: 'system',
+            title: 'Feedback Requested',
+            message: `Feedback requests dispatched to ${sentCount} attendees for ${event.eventName}.`
+        });
+
+        // Update tracking stat
+        event.feedbackEmailsSent = (event.feedbackEmailsSent || 0) + sentCount;
+        await event.save();
+
+        res.status(200).json({ message: 'Feedback requests dispatched', sentCount });
+    } catch (error) {
+        console.error('Error requesting feedback:', error);
+        res.status(500).json({ error: 'Failed to request feedback' });
     }
 };

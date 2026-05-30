@@ -34,13 +34,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Poster background is now decoupled from event image and follows CSS design
             
-            // Set description with visibility check
+            // Set exact dynamic description without hardcoded placeholders
             const descEl = document.getElementById('panelDesc');
-            if (evt.description && evt.description !== 'No description provided') {
-                descEl.textContent = evt.description;
-            } else {
-                descEl.textContent = 'Join us for this exclusive event at DSVV! Don\'t miss out on this incredible opportunity.';
-            }
+            descEl.textContent = evt.description || 'No description provided';
         }
 
         // Fetch validated student details from imported records
@@ -54,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('studentCourse').value = data.course;
             document.getElementById('studentSemester').value = data.semester;
         } else {
-            alert('Invalid Session. Redirecting.');
+            customAlert('Invalid Session. Redirecting.');
             window.location.href = 'user.html';
         }
     } catch (err) {

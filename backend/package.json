@@ -1,5 +1,16 @@
 {
   "dependencies": {
-    "nodemailer": "^8.0.7"
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "googleapis": "^173.0.0",
+    "mongoose": "^9.6.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.7",
+    "pdf-parse": "^2.4.5",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3",
+    "streamifier": "^0.1.1",
+    "xlsx": "^0.18.5"
   }
 }

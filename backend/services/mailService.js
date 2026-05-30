@@ -85,10 +85,67 @@ exports.sendUserWelcomeEmail = async (registration, eventData) => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✓ Welcome email sent to ${registration.email}`);
+        console.log("Welcome email sent to " + registration.email);
         return true;
     } catch (error) {
         console.error('Error sending welcome email:', error.message);
+        return false;
+    }
+};
+
+exports.sendFeedbackRequestEmail = async (student, eventData, theme = 'dark') => {
+    try {
+        if (!student.email) return false;
+
+        const feedbackUrl = `http://localhost:4000/?eventId=${encodeURIComponent(eventData.adminId)}&eventName=${encodeURIComponent(eventData.eventName)}&scholarId=${encodeURIComponent(student.scholarId)}&studentName=${encodeURIComponent(student.name)}&course=${encodeURIComponent(student.course)}&semester=${encodeURIComponent(student.semester)}&theme=${encodeURIComponent(theme)}`;
+
+        const isLight = theme === 'light';
+        const bgColor = isLight ? '#f8fafc' : '#020617';
+        const cardBg = isLight ? '#ffffff' : '#0f172a';
+        const textColor = isLight ? '#334155' : '#f8fafc';
+        const mutedColor = isLight ? '#64748b' : '#94a3b8';
+        const borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)';
+        const headerBg = isLight ? '#ffffff' : 'linear-gradient(135deg, #1e293b, #0f172a)';
+        const headerText = isLight ? '#0f172a' : '#ffffff';
+
+        const mailOptions = {
+            from: `"DSVV Events Team" <${process.env.SMTP_USER}>`,
+            to: student.email,
+            subject: `Feedback Requested: ${eventData.eventName}`,
+            html: `
+                <div style="font-family: 'Arial', sans-serif; background-color: ${bgColor}; padding: 20px;">
+                    <div style="max-width: 600px; margin: 0 auto; background: ${cardBg}; padding: 0; border: 1px solid ${borderColor}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <div style="background: ${headerBg}; padding: 40px 20px; text-align: center; border-bottom: 4px solid #0284c7;">
+                            <img src="https://www.addressguru.in/images/1801593532.png" alt="DSVV Logo" style="height: 70px; margin-bottom: 20px;">
+                            <h1 style="color: ${headerText}; font-size: 24px; margin: 0; font-weight: 700; letter-spacing: -0.5px;">We Value Your Feedback</h1>
+                        </div>
+                        
+                        <div style="padding: 40px 30px;">
+                            <p style="color: ${textColor}; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Dear <strong>${student.name}</strong>,</p>
+                            
+                            <p style="color: ${textColor}; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                                Thank you for attending <strong>${eventData.eventName}</strong>. We hope you found the session valuable and informative. Your feedback is extremely important to us and helps us improve future sessions.
+                            </p>
+
+                            <div style="text-align: center; margin: 40px 0;">
+                                <a href="${feedbackUrl}" style="background-color: #0284c7; color: #ffffff; padding: 14px 32px; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(2, 132, 199, 0.25);">Submit Feedback</a>
+                            </div>
+                            
+                            <p style="color: ${mutedColor}; font-size: 14px; line-height: 1.6; margin-top: 30px; border-top: 1px solid ${borderColor}; padding-top: 20px;">
+                                Best Regards,<br>
+                                <strong>DSVV Event Management Team</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Feedback email sent to ${student.email} with theme ${theme}`);
+        return true;
+    } catch (error) {
+        console.error('Failed to send feedback email:', error);
         return false;
     }
 };
@@ -379,6 +436,91 @@ exports.verifyTransporter = async () => {
     } catch (error) {
         console.error('✗ Mail transporter verification failed:', error.message);
         console.warn('⚠ Email service may not work. Check SMTP credentials in .env');
+        return false;
+    }
+};
+
+// Send password change request email with confirm button
+exports.sendPasswordChangeRequestEmail = async (adminEmail, confirmUrl) => {
+    try {
+        const mailOptions = {
+            from: process.env.MAIL_FROM || process.env.SMTP_USER,
+            to: adminEmail,
+            subject: 'Password Change Confirmation',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">Password Change Request</h1>
+                        </div>
+                        <div style="padding: 30px; text-align: center;">
+                            <p style="font-size: 16px; margin-bottom: 20px; text-align: left;">Dear Administrator,</p>
+                            <p style="font-size: 15px; margin-bottom: 25px; text-align: left;">
+                                We received a request to change the password for your Admin account. Was this you?
+                            </p>
+                            
+                            <div style="margin: 30px 0;">
+                                <a href="${confirmUrl}" style="background: #1e3a8a; color: white; padding: 12px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; display: inline-block; box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);">
+                                    Confirm Password Change
+                                </a>
+                            </div>
+
+                            <p style="font-size: 13px; color: #666; margin-top: 30px; text-align: left;">
+                                If you did not make this request, please ignore this email. Your password will remain unchanged and active.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+                            <p style="color: #888; font-size: 11px;">
+                                This is an automated email. Please do not reply to this message.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+        await transporter.sendMail(mailOptions);
+        console.log("Password reset request email sent to " + adminEmail);
+        return true;
+    } catch (error) {
+        console.error('Error sending password reset request email:', error.message);
+        return false;
+    }
+};
+
+// Send password changed success email
+exports.sendPasswordChangedSuccessEmail = async (adminEmail) => {
+    try {
+        const mailOptions = {
+            from: process.env.MAIL_FROM || process.env.SMTP_USER,
+            to: adminEmail,
+            subject: 'Password Changed Successfully',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">Password Updated Successfully</h1>
+                        </div>
+                        <div style="padding: 30px;">
+                            <p style="font-size: 16px; margin-bottom: 20px;">Dear Administrator,</p>
+                            <p style="font-size: 15px; margin-bottom: 20px;">
+                                Your admin password has been successfully changed.
+                            </p>
+                            <p style="font-size: 15px; color: #ef4444; font-weight: bold; margin-bottom: 20px;">
+                                You can now log in using your new password.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+                            <p style="color: #888; font-size: 11px;">
+                                This is an automated security email. Please do not reply to this message.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+        await transporter.sendMail(mailOptions);
+        console.log("Password changed success email sent to " + adminEmail);
+        return true;
+    } catch (error) {
+        console.error('Error sending password changed success email:', error.message);
         return false;
     }
 };

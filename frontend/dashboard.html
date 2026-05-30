@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         (function() {
@@ -43,12 +44,12 @@
             </div>
 
             <div class="profile-card">
-                <div class="avatar-circle">A</div>
+                <div class="avatar-circle" id="sidebarAvatar">A</div>
                 <div>
-                    <h4 style="font-size: 0.95rem; color: var(--text-primary); margin: 0; font-weight: 600;">Amit Tiwari</h4>
-                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">amit@gmail.com</p>
+                    <h4 style="font-size: 0.95rem; color: var(--text-primary); margin: 0; font-weight: 600;" id="sidebarAdminName">Amit Tiwari</h4>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;" id="sidebarAdminEmail">amit@gmail.com</p>
                 </div>
-                <div class="bell-icon"><i class="fa-regular fa-bell"></i></div>
+                <div class="bell-icon" onclick="switchTab('notifications')" style="cursor: pointer;"><i class="fa-regular fa-bell"></i></div>
             </div>
 
             <nav class="nav-links">
@@ -57,6 +58,12 @@
                 </div>
                 <div class="nav-item" onclick="switchTab('registrations', this)">
                     <span>👥 Registrations</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('analytics', this)">
+                    <span>📈 Analytics</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('feedback', this)">
+                    <span>⭐ Feedback</span>
                 </div>
                 <div class="nav-item" onclick="switchTab('scanner', this)">
                     <span>🔲 QR Scanner</span>
@@ -181,7 +188,7 @@
                             <button class="btn-primary" onclick="handleDownloadSelection()" style="background: var(--btn-rich-bg); box-shadow: var(--btn-rich-shadow);">
                                 <i class="fas fa-download"></i> Download
                             </button>
-                            <button class="btn-glow" style="background: #ef4444;" onclick="bulkDeleteEventRecords()">🗑 Delete All Records</button>
+                            <button class="btn-danger" onclick="bulkDeleteEventRecords()">🗑 Delete All Records</button>
                             <button class="btn-glow" style="background: var(--neon-purple);" onclick="openModal('uploadModal')">📁 Upload Excel/PDF</button>
                             <button class="btn-glow" onclick="openModal('manualEntryModal')">+ New Registration</button>
                         </div>
@@ -190,10 +197,15 @@
                     <div style="background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem;">
                         <!-- Filters & Search -->
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border);">
-                            <div style="display: flex; gap: 1rem;">
-                                <button class="btn-outline">All</button>
-                                <button class="btn-outline">Present</button>
-                                <button class="btn-outline">Pending</button>
+                            <div class="report-filter-container" id="regFilterContainer">
+                                <button class="btn-outline" style="padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; border-radius: 8px; text-transform: none; font-weight: 600;" id="regFilterBtn">
+                                    <i class="fa-solid fa-filter"></i> Status: All
+                                </button>
+                                <div class="report-filter-dropdown" id="regFilterDropdown" style="width: 160px; right: auto; left: 0;">
+                                    <div class="report-dropdown-option active" data-filter="All">All</div>
+                                    <div class="report-dropdown-option" data-filter="Present">Present</div>
+                                    <div class="report-dropdown-option" data-filter="Pending">Pending</div>
+                                </div>
                             </div>
                             <div style="display: flex; gap: 1rem; align-items: center;">
                                 <select id="registrationsEventSelect" style="padding: 0.6rem; border-radius: 8px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
@@ -217,13 +229,228 @@
                                         <th>Email</th>
                                         <th>Course / Sem</th>
                                         <th>Date</th>
+                                        <th>IP Address</th>
                                         <th>Status</th>
                                         <th>QR Code</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="registrationsTableBody">
-                                    <tr><td colspan="9" style="text-align:center; color: var(--text-secondary);">Upload data to view records.</td></tr>
+                                    <tr><td colspan="10" style="text-align:center; color: var(--text-secondary);">Upload data to view records.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION: ANALYTICS -->
+                <section id="sec-analytics" class="spa-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div>
+                            <!-- Header title omitted since parent layout updates it dynamically -->
+                        </div>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <select id="analyticsEventSelect" style="padding: 0.6rem; border-radius: 8px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border); width: 250px;">
+                                <option value="">Select Event</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Visual Cards Grid -->
+                    <div class="stats-grid" style="margin-bottom: 2rem;">
+                        <!-- Total Events Card -->
+                        <div class="stat-card premium-glass-card">
+                            <div class="badge premium-badge-blue" id="analyticTotalEventsBadge">+12%</div>
+                            <div class="stat-icon premium-icon-blue">
+                                <i class="fa-regular fa-calendar-days"></i>
+                            </div>
+                            <div class="stat-value" id="analyticTotalEvents">0</div>
+                            <div class="stat-label">Total Events</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar bar-blue" id="analyticProgressEvents" style="width: 75%;"></div>
+                            </div>
+                        </div>
+                        <!-- Registrations Card -->
+                        <div class="stat-card premium-glass-card">
+                            <div class="badge premium-badge-purple" id="analyticRegistrationsBadge">+23%</div>
+                            <div class="stat-icon premium-icon-purple">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div class="stat-value" id="analyticRegistrations">0</div>
+                            <div class="stat-label">Registrations</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar bar-purple" id="analyticProgressReg" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <!-- Revenue Card -->
+                        <div class="stat-card premium-glass-card">
+                            <div class="badge premium-badge-green" id="analyticRevenueBadge">+18%</div>
+                            <div class="stat-icon premium-icon-green">
+                                <i class="fa-solid fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-value" id="analyticRevenue">$0</div>
+                            <div class="stat-label">Revenue</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar bar-green" id="analyticProgressRev" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <!-- Attendance Card -->
+                        <div class="stat-card premium-glass-card">
+                            <div class="badge premium-badge-orange" id="analyticAttendanceBadge">+8%</div>
+                            <div class="stat-icon premium-icon-orange">
+                                <i class="fa-solid fa-user-check"></i>
+                            </div>
+                            <div class="stat-value" id="analyticAttendance">0</div>
+                            <div class="stat-label">Attendance</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar bar-orange" id="analyticProgressAtt" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty Data State -->
+                    <div id="analyticsNoDataContainer" style="display: none; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 16px; text-align: center; color: var(--text-secondary);">
+                        <div style="font-size: 3.5rem; color: var(--neon-cyan); opacity: 0.5; margin-bottom: 1.5rem;">📊</div>
+                        <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">No Analytics Data Available</h3>
+                        <p>Please select a different event or import registration records to view detailed analytics.</p>
+                    </div>
+
+                    <!-- Charts Grid Container -->
+                    <div id="analyticsChartsContainer" class="analytics-grid">
+                        <!-- Line Chart Card -->
+                        <div class="stat-card premium-glass-card" style="padding: 2rem; display: flex; flex-direction: column; min-height: 400px; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <div>
+                                    <h3 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin: 0;">Registration Trend</h3>
+                                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.2rem 0 0 0;">Monthly growth overview</p>
+                                </div>
+                                <i class="fa-solid fa-chart-line" style="color: var(--neon-cyan); font-size: 1.2rem;"></i>
+                            </div>
+                            <div style="flex: 1; min-height: 280px; position: relative;">
+                                <canvas id="lineChartCanvas"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Bar Chart Card -->
+                        <div class="stat-card premium-glass-card" style="padding: 2rem; display: flex; flex-direction: column; min-height: 400px; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <div>
+                                    <h3 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin: 0;">Analytics Overview</h3>
+                                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.2rem 0 0 0;">Clean dashboard-style presentation</p>
+                                </div>
+                                <i class="fa-solid fa-chart-bar" style="color: var(--neon-green); font-size: 1.2rem;"></i>
+                            </div>
+                            <div style="flex: 1; min-height: 280px; position: relative;">
+                                <canvas id="barChartCanvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION: FEEDBACK ANALYTICS -->
+                <section id="sec-feedback" class="spa-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="color: var(--text-primary); margin-bottom: 0.25rem;">Feedback Analytics</h2>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Monitor live feedback metrics and survey responses</p>
+                        </div>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <select id="fbEventFilter" class="glass-input" style="padding: 0.5rem 1rem; border-radius: 8px;" onchange="loadFeedbackDashboard()">
+                                <option value="ALL">All Events</option>
+                            </select>
+                            <input type="date" id="fbDateFilter" class="glass-input" style="padding: 0.5rem 1rem; border-radius: 8px;" onchange="loadFeedbackDashboard()">
+                            <button class="btn-primary" onclick="loadFeedbackDashboard()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Top Summary Cards -->
+                    <div class="stats-grid" style="margin-bottom: 2rem;">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: #3b82f6;">📧</div>
+                            <div class="stat-value" id="fbSentVal">0</div>
+                            <div class="stat-label">Feedback Sent</div>
+                            <div style="height: 3px; background: #3b82f6; width: 100%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: #10b981;">📩</div>
+                            <div class="stat-value" id="fbReceivedVal">0</div>
+                            <div class="stat-label">Responses Received</div>
+                            <div style="height: 3px; background: #10b981; width: 100%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: #f59e0b;">⏳</div>
+                            <div class="stat-value" id="fbPendingVal">0</div>
+                            <div class="stat-label">Pending Responses</div>
+                            <div style="height: 3px; background: #f59e0b; width: 100%; margin-top: 1rem; border-radius: 2px;"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="color: #8b5cf6;">📈</div>
+                            <div class="stat-value" id="fbCompletionVal">0%</div>
+                            <div class="stat-label">Completion Rate</div>
+                            <div class="progress-bar-container" style="margin-top: 1rem; height: 6px; background: var(--glass-border); border-radius: 3px; overflow: hidden;">
+                                <div id="fbCompletionBar" style="height: 100%; width: 0%; background: #8b5cf6; transition: width 0.5s;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                        <!-- Donut Chart -->
+                        <div class="stat-card" style="display: flex; flex-direction: column;">
+                            <div style="margin-bottom: 1.5rem;">
+                                <h3 style="color: var(--text-primary); font-size: 1.1rem;">Response Status</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem;">Received vs Pending Ratio</p>
+                            </div>
+                            <div style="flex: 1; min-height: 250px; position: relative;">
+                                <canvas id="fbDonutChart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Bar Chart -->
+                        <div class="stat-card" style="display: flex; flex-direction: column; grid-column: auto / span 2;">
+                            <div style="margin-bottom: 1.5rem;">
+                                <h3 style="color: var(--text-primary); font-size: 1.1rem;">Event Performance</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem;">Feedback responses by event</p>
+                            </div>
+                            <div style="flex: 1; min-height: 250px; position: relative;">
+                                <canvas id="fbBarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Line Chart -->
+                    <div class="stat-card" style="margin-bottom: 2rem; display: flex; flex-direction: column;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--text-primary); font-size: 1.1rem;">Submission Trend</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.8rem;">Feedback received over time</p>
+                        </div>
+                        <div style="flex: 1; height: 300px; position: relative;">
+                            <canvas id="fbLineChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Table -->
+                    <div class="stat-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                            <h3 style="color: var(--text-primary); font-size: 1.1rem;">Detailed Analytics</h3>
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="fbSearchInput" placeholder="Search events..." class="glass-input" onkeyup="filterFeedbackTable()" style="padding-left: 2rem;">
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="glass-table" id="fbTable">
+                                <thead>
+                                    <tr>
+                                        <th>Event Name</th>
+                                        <th>Sent</th>
+                                        <th>Received</th>
+                                        <th>Pending</th>
+                                        <th>Completion %</th>
+                                        <th>Last Response</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
                                 </tbody>
                             </table>
                         </div>
@@ -301,39 +528,54 @@
                     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
                         <div class="stat-card" style="padding: 2rem;">
                             <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">📄 Configure Report</h3>
-                            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                <button class="btn-primary" style="text-align: left; width: 100%;">📅 Events Report</button>
-                                <button class="btn-outline" style="text-align: left; border-radius: 8px;">👥 Registrations Report</button>
-                                <button class="btn-outline" style="text-align: left; border-radius: 8px;">💵 Revenue Report</button>
-                                <button class="btn-outline" style="text-align: left; border-radius: 8px;">✔️ Attendance Report</button>
+                            <div id="reportTypeContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+                                <button id="repBtn-events" class="btn-primary" style="text-align: left; width: 100%; border-radius: 8px;" onclick="switchReportType('events')">📅 Events Report</button>
+                                <button id="repBtn-registrations" class="btn-outline" style="text-align: left; border-radius: 8px;" onclick="switchReportType('registrations')">👥 Registrations Report</button>
+                                <button id="repBtn-revenue" class="btn-outline" style="text-align: left; border-radius: 8px;" onclick="switchReportType('revenue')">💵 Revenue Report</button>
+                                <button id="repBtn-attendance" class="btn-outline" style="text-align: left; border-radius: 8px;" onclick="switchReportType('attendance')">✔️ Attendance Report</button>
                             </div>
                             
                             <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--text-secondary);">Export Format</h4>
                             <div style="display: flex; gap: 1rem;">
                                 <button class="btn-primary" style="flex: 1;" onclick="exportReport('pdf')">PDF</button>
-                                <button class="btn-outline" style="flex: 1;" onclick="exportReport('csv')">CSV</button>
+                                <button class="btn-outline" style="flex: 1;" onclick="exportReport('ods')">ODS</button>
                                 <button class="btn-outline" style="flex: 1;" onclick="exportReport('excel')">EXCEL</button>
                             </div>
                         </div>
 
-                        <div class="stat-card" style="padding: 2rem; overflow-x: auto;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                                <h3 style="color: var(--text-primary);">Events Preview</h3>
-                                <span style="color: var(--neon-cyan); cursor: pointer;">🔍 Filter</span>
+                        <div class="stat-card" style="padding: 2rem; height: 500px; display: flex; flex-direction: column; overflow: hidden;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-shrink: 0;">
+                                <h3 id="reportPreviewTitle" style="color: var(--text-primary); margin: 0;">Events Preview</h3>
+                                <div class="report-filter-container" id="reportFilterContainer">
+                                    <button class="btn-outline" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; border-radius: 8px; text-transform: none; font-weight: 600;" id="reportFilterBtn">
+                                        <i class="fa-solid fa-filter"></i> Filter
+                                    </button>
+                                    <div class="report-filter-dropdown" id="reportFilterDropdown">
+                                        <input type="text" id="reportSearchInput" placeholder="Search records..." class="report-dropdown-search">
+                                        <div class="report-dropdown-option" id="sortAtoZ">
+                                            <i class="fa-solid fa-sort-alpha-down"></i> A to Z
+                                        </div>
+                                        <div class="report-dropdown-option" id="sortZtoA">
+                                            <i class="fa-solid fa-sort-alpha-up"></i> Z to A
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <table class="data-table" style="width: 100%;">
-                                <thead>
-                                    <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
-                                        <th style="padding: 1rem;">Event</th>
-                                        <th style="padding: 1rem;">Date</th>
-                                        <th style="padding: 1rem;">Registered</th>
-                                        <th style="padding: 1rem;">Revenue</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reportPreviewTable">
-                                    <tr><td colspan="4" style="text-align:center; padding: 1rem; color: var(--text-secondary);">Loading preview...</td></tr>
-                                </tbody>
-                            </table>
+                            <div style="flex: 1; overflow-y: auto; overflow-x: auto; min-height: 0;" class="table-container">
+                                <table class="data-table" style="width: 100%;">
+                                    <thead id="reportPreviewHead">
+                                        <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                                            <th style="padding: 1rem;">Event</th>
+                                            <th style="padding: 1rem;">Date</th>
+                                            <th style="padding: 1rem;">Registered</th>
+                                            <th style="padding: 1rem;">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reportPreviewTable">
+                                        <tr><td colspan="4" style="text-align:center; padding: 1rem; color: var(--text-secondary);">Loading preview...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -348,9 +590,10 @@
                         <button class="btn-primary" onclick="markAllNotificationsRead()">✔️ Mark all as read</button>
                     </div>
 
-                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center;">
                         <button class="btn-primary" onclick="filterNotifications('all')">All (<span id="totalNotifCount">0</span>)</button>
                         <button class="btn-outline" onclick="filterNotifications('unread')">Unread (<span id="unreadNotifCount">0</span>)</button>
+                        <button class="btn-danger" style="margin-left: auto;" onclick="deleteAllNotifications()">🗑️ Delete All</button>
                     </div>
 
                     <div id="notificationsContainer" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -363,45 +606,45 @@
                 <section id="sec-settings" class="spa-section">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                         <div class="profile-card" style="background: var(--bg-card); padding: 1.5rem; width: 100%; border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; gap: 1.5rem;">
-                            <div class="avatar" style="width: 60px; height: 60px; font-size: 1.5rem;">A</div>
+                            <div class="avatar" id="settingsAvatar" style="width: 60px; height: 60px; font-size: 1.5rem; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #38bdf8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">A</div>
                             <div>
-                                <h2 style="color: var(--text-primary); margin-bottom: 0.2rem;">Admin User</h2>
-                                <p style="color: var(--text-secondary); font-size: 0.9rem;">admin@event.com</p>
-                                <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-top: 0.5rem; display: inline-block;">admin</span>
+                                <h2 style="color: var(--text-primary); margin-bottom: 0.2rem;" id="settingsAdminName">Admin User</h2>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;" id="settingsAdminEmail">admin@event.com</p>
+                                <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-top: 0.5rem; display: inline-block;" id="settingsAdminDesignation">Super Admin</span>
                             </div>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem;">
-                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Profile Settings Modal')">
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="openProfileSettingsModal()">
                             <div style="font-size: 1.5rem; color: #3b82f6;">👤</div>
                             <div>
                                 <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Profile Settings</h3>
                                 <p style="color: var(--text-secondary); font-size: 0.85rem;">Manage your account information</p>
                             </div>
                         </div>
-                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Notification Preferences Modal')">
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="switchTab('notifications')">
                             <div style="font-size: 1.5rem; color: #3b82f6;">🔔</div>
                             <div>
                                 <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Notifications</h3>
                                 <p style="color: var(--text-secondary); font-size: 0.85rem;">Configure notification preferences</p>
                             </div>
                         </div>
-                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Security Modal')">
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="openSecurityModal()">
                             <div style="font-size: 1.5rem; color: #3b82f6;">🛡️</div>
                             <div>
                                 <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Security</h3>
                                 <p style="color: var(--text-secondary); font-size: 0.85rem;">Password and authentication settings</p>
                             </div>
                         </div>
-                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="toggleLightMode()">
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="openAppearanceModal()">
                             <div style="font-size: 1.5rem; color: #3b82f6;">🎨</div>
                             <div>
                                 <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Appearance</h3>
                                 <p style="color: var(--text-secondary); font-size: 0.85rem;">Customize theme and display</p>
                             </div>
                         </div>
-                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="alert('Data Privacy Modal')">
+                        <div class="stat-card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;" onclick="openDataPrivacyModal()">
                             <div style="font-size: 1.5rem; color: #3b82f6;">🗄️</div>
                             <div>
                                 <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem;">Data & Privacy</h3>
@@ -412,9 +655,9 @@
 
                     <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Quick Actions</h3>
                     <div style="display: flex; gap: 1rem;">
-                        <button class="btn-primary" style="flex: 1;" onclick="exportData()">Export Data</button>
-                        <button class="btn-outline" style="flex: 1;" onclick="clearCache()">Clear Cache</button>
-                        <button class="btn-danger" style="flex: 1;" onclick="deleteAccount()">Delete Account</button>
+                        <button class="btn-primary" style="flex: 1;" onclick="exportAdminProfileData()">Export Data</button>
+                        <button class="btn-outline" style="flex: 1;" onclick="clearLocalPreferences()">Clear Preferences</button>
+                        <button class="btn-danger" style="flex: 1;" onclick="logoutFromAllDevices()">Logout All Devices</button>
                     </div>
                 </section>
 
@@ -505,8 +748,8 @@
                 <a id="modalQrPortalLink" href="#" target="_blank" style="display: none; color: #2563eb; font-family: monospace; font-size: 0.8rem; margin-bottom: 2rem; word-break: break-all; text-decoration: none; border-bottom: 1px dashed #2563eb; opacity: 0.8; transition: 0.3s;"></a>
                 
                 <div style="display: flex; gap: 1rem; justify-content: center;" data-html2canvas-ignore="true">
-                    <button class="btn-primary" style="flex: 1; padding: 0.7rem 1.25rem; font-size: 0.8rem; letter-spacing: 1px; font-weight: 700;" onclick="downloadModalQr()">⬇ DOWNLOAD QR</button>
                     <button class="btn-outline" style="flex: 1; padding: 0.7rem 1.25rem; font-size: 0.8rem; letter-spacing: 1px; font-weight: 700; border-color: rgba(255,255,255,0.2); color: white;" onclick="closeModal('viewQrModal')">CLOSE</button>
+                    <button id="btnDownloadQr" class="btn-primary" style="flex: 1; padding: 0.7rem 1.25rem; font-size: 0.8rem; letter-spacing: 1px; font-weight: 700;" onclick="downloadQrImage()">DOWNLOAD</button>
                 </div>
             </div>
         </div>
@@ -627,6 +870,188 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL: Profile Settings -->
+    <div class="modal-overlay" id="profileSettingsModal" style="display: none;">
+        <div class="modal-content" style="max-width: 580px; padding: 2.5rem;">
+            <h2 style="margin-bottom: 1.5rem; color: var(--neon-cyan);">Profile Settings</h2>
+            <form id="profileSettingsForm">
+                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 2rem;">
+                    <div style="position: relative; width: 110px; height: 110px; border-radius: 50%; overflow: hidden; border: 3px solid var(--neon-cyan); cursor: pointer;" onclick="document.getElementById('profilePhotoInput').click()">
+                        <img id="profilePhotoPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 0.75rem; text-align: center; padding: 4px 0;">
+                            <i class="fa-solid fa-camera"></i> Change
+                        </div>
+                    </div>
+                    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                    <p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.5rem;">Recommended square image. Max 5MB.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="profileName" required placeholder="Name" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="profileEmail" required placeholder="email@event.com" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="text" id="profilePhone" placeholder="+1234567890" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                    <div class="input-group">
+                        <label>Department</label>
+                        <input type="text" id="profileDepartment" placeholder="e.g. Computer Science" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Designation</label>
+                    <input type="text" id="profileDesignation" placeholder="Super Admin" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+
+                <div class="input-group">
+                    <label>Bio / Professional Summary</label>
+                    <textarea id="profileBio" placeholder="Tell us about yourself..." style="width: 100%; height: 80px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 8px; padding: 0.8rem; box-sizing: border-box;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn-outline" style="flex: 1;" onclick="closeModal('profileSettingsModal')">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;" id="btnSaveProfile">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Security Working Password Change -->
+    <div class="modal-overlay" id="securityModal" style="display: none;">
+        <div class="modal-content" style="max-width: 480px; padding: 2.5rem;">
+            <h2 style="margin-bottom: 1rem; color: var(--neon-cyan);">Security Settings</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5;">Change your admin login password. After request submission, a verification link will be sent to your registered Gmail address. The password change will take effect only after clicking that email confirmation link.</p>
+            <form id="securityForm">
+                <div class="input-group">
+                    <label>Current Password</label>
+                    <input type="password" id="securityOldPassword" required placeholder="••••••••••••" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="securityNewPassword" required placeholder="••••••••••••" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div class="input-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="securityConfirmPassword" required placeholder="••••••••••••" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn-outline" style="flex: 1;" onclick="closeModal('securityModal')">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;" id="btnRequestPasswordChange">Request Change</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Appearance Themes -->
+    <div class="modal-overlay" id="appearanceModal" style="display: none;">
+        <div class="modal-content" style="max-width: 580px; padding: 2.5rem;">
+            <h2 style="margin-bottom: 1.5rem; color: var(--neon-cyan);">Visual Theme Selection</h2>
+            
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary);">Light Themes</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div class="theme-selection-card" onclick="applyAppTheme('light')" style="background: #ffffff; color: #1e3a8a; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Default Light
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('premium-blue-light')" style="background: #eff6ff; color: #1e40af; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Premium Blue Light
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('soft-gray-light')" style="background: #f8fafc; color: #334155; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Soft Gray Light
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('warm-cream')" style="background: #fdfbf7; color: #78350f; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Warm Cream
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('modern-white')" style="background: #fafafa; color: #171717; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Modern White
+                </div>
+            </div>
+
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary);">Dark Themes</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                <div class="theme-selection-card" onclick="applyAppTheme('dark')" style="background: #0f172a; color: #cbd5e1; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Default Dark
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('midnight-blue')" style="background: #020617; color: #38bdf8; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Midnight Blue
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('amoled-black')" style="background: #000000; color: #ffffff; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    AMOLED Black
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('purple-dark')" style="background: #1e1b4b; color: #c084fc; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Purple Dark
+                </div>
+                <div class="theme-selection-card" onclick="applyAppTheme('forest-dark')" style="background: #062f4f; color: #4ade80; border: 2px solid var(--glass-border); padding: 1rem; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; font-size: 0.85rem;">
+                    Forest Dark
+                </div>
+            </div>
+
+            <div style="margin-top: 2.5rem; text-align: right;">
+                <button class="btn-primary" onclick="closeModal('appearanceModal')" style="padding: 0.75rem 2rem;">Close Selection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Data & Privacy -->
+    <div class="modal-overlay" id="dataPrivacyModal" style="display: none;">
+        <div class="modal-content" style="max-width: 580px; padding: 2.5rem;">
+            <h2 style="margin-bottom: 1.5rem; color: var(--neon-cyan);">Data & Privacy Panel</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                <div style="background: var(--bg-card); border: 1px solid var(--glass-border); padding: 1.25rem; border-radius: 12px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Export Profile Data</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 1rem;">Download a secure offline copy of your entire administrator profile configuration in standard JSON format.</p>
+                    <button class="btn-glow" style="width: auto; padding: 0.5rem 1rem;" onclick="exportAdminProfileData()">Download JSON</button>
+                </div>
+
+                <div style="background: var(--bg-card); border: 1px solid var(--glass-border); padding: 1.25rem; border-radius: 12px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Clear Local Preferences</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 1rem;">Reset custom theme settings and clear offline workspace caches from this web browser session.</p>
+                    <button class="btn-outline" style="width: auto; padding: 0.5rem 1rem;" onclick="clearLocalPreferences()">Clear Offline Preferences</button>
+                </div>
+
+                <div style="background: var(--bg-card); border: 1px solid var(--glass-border); padding: 1.25rem; border-radius: 12px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Logout From All Devices</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 1rem;">Instantly invalidate all open superadmin sessions and force redirect to login panel.</p>
+                    <button class="btn-danger" style="width: auto; padding: 0.5rem 1rem;" onclick="logoutFromAllDevices()">Terminate All Sessions</button>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--glass-border); padding-top: 1.5rem;">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Data Retention Statement</h3>
+                <p style="color: var(--text-muted); font-size: 0.75rem; line-height: 1.5; margin: 0;">In accordance with Dev Sanskriti Vishwavidyalaya (DSVV) privacy statutes, administrator profile changes and registrations are processed securely on isolated network servers. Profile logs and data exports are maintained under strict supervision and are not distributed to external entities.</p>
+            </div>
+
+            <div style="margin-top: 2rem; text-align: right;">
+                <button class="btn-primary" onclick="closeModal('dataPrivacyModal')" style="padding: 0.75rem 2rem;">Close</button>
+            </div>
+        </div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebarOnMobile()"></div>
+
+    <!-- MODAL: Feedback Preview -->
+    <div class="modal-overlay" id="feedbackPreviewModal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 90vh;">
+            <div style="padding: 1rem 1.5rem; background: var(--bg-card); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: var(--neon-purple); font-size: 1.25rem;">Live Feedback Preview</h2>
+                <button class="btn-danger" style="padding: 0.4rem 1rem;" onclick="closeModal('feedbackPreviewModal')">Close Preview</button>
+            </div>
+            <div style="flex: 1; background: #000; position: relative;">
+                <iframe id="feedbackPreviewFrame" src="" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="./js/dashboard.js"></script>
 </body>
