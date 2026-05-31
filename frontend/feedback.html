@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Feedback | DSVV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/feedback.css">
+</head>
+<body>
+    
+    <!-- Curtain Animation -->
+    <div class="curtain-container" id="curtainContainer">
+        <div class="curtain left"></div>
+        <div class="curtain right"></div>
+        <div class="curtain-logo">
+            <img src="https://www.addressguru.in/images/1801593532.png" alt="DSVV Logo">
+            <h2>Welcome to DSVV Feedback</h2>
+        </div>
+    </div>
+
+    <!-- Sparkles -->
+    <div id="sparkles"></div>
+
+    <main class="glass-container">
+        <header class="form-header">
+            <img src="https://www.addressguru.in/images/1801593532.png" alt="DSVV Logo" class="logo">
+            <h1>Session Feedback</h1>
+            <p id="eventTitle">Loading Event...</p>
+        </header>
+
+        <form id="feedbackForm" class="feedback-form">
+            <!-- Hidden inputs for mapping -->
+            <input type="hidden" id="eventId" name="eventId">
+            <input type="hidden" id="eventName" name="eventName">
+            <input type="hidden" id="scholarId" name="scholarId">
+            <input type="hidden" id="ratingValue" name="rating">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" id="studentName" name="studentName" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Course</label>
+                    <input type="text" id="course" name="course" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Semester</label>
+                    <input type="text" id="semester" name="semester" readonly>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="form-group question-group">
+                <label class="question-label">1. How would you rate the overall session?</label>
+                <div class="rating-emojis" id="ratingContainer">
+                    <div class="emoji-btn" data-val="1">😠</div>
+                    <div class="emoji-btn" data-val="2">😟</div>
+                    <div class="emoji-btn" data-val="3">😐</div>
+                    <div class="emoji-btn" data-val="4">🙂</div>
+                    <div class="emoji-btn" data-val="5">🤩</div>
+                </div>
+            </div>
+
+            <div class="form-group question-group">
+                <label class="question-label">2. How relevant was the session to your needs?</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="relevance" value="Highly Relevant" required>
+                        <span>Highly Relevant</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="relevance" value="Somewhat Relevant">
+                        <span>Somewhat Relevant</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="relevance" value="Not Relevant">
+                        <span>Not Relevant</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group question-group">
+                <label class="question-label" for="valuableGain">3. What was the most valuable thing you gained from this session?</label>
+                <textarea id="valuableGain" name="valuableGain" rows="3" placeholder="Share your key takeaways..." required></textarea>
+            </div>
+
+            <div class="form-group question-group">
+                <label class="question-label" for="nextLearn">4. What would you like to learn in the next session?</label>
+                <textarea id="nextLearn" name="nextLearn" rows="3" placeholder="Suggest topics or skills..." required></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span>Submit Feedback</span>
+                <div class="spinner"></div>
+            </button>
+        </form>
+        
+        <div id="successMessage" class="success-message hidden">
+            <div class="success-icon">✓</div>
+            <h2>Thank You!</h2>
+            <p>Your feedback has been successfully recorded. You may now close this window.</p>
+        </div>
+    </main>
+
+    <script src="./js/feedback.js"></script>
+</body>
+</html>

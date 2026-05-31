@@ -27,6 +27,9 @@ router.delete('/event/:adminId', adminController.deleteEvent);
 // Request Feedback
 router.post('/event/:adminId/request-feedback', adminController.requestFeedback);
 
+// Get All Feedback for Dashboard Analytics
+router.get('/feedback/all', adminController.getAllFeedback);
+
 // Update Event Image
 router.put('/event/:adminId/image', upload.single('image'), adminController.updateEventImage);
 

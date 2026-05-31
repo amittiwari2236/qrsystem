@@ -2457,12 +2457,16 @@ async function requestFeedback(adminId) {
         const data = await res.json();
         
         if (res.ok) {
+            if (data.success === false) {
+                alert(data.error || 'Operation failed.');
+                return;
+            }
             alert(`✅ Success! Feedback requests sent to ${data.sentCount} students.`);
             
             // Open Preview Modal
             const ev = globalData.events.find(e => e.adminId === adminId);
             const eventName = ev ? ev.eventName : 'Event';
-            const previewUrl = `http://localhost:4000/?eventId=${encodeURIComponent(adminId)}&eventName=${encodeURIComponent(eventName)}&scholarId=PREVIEW-ADMIN&studentName=Admin+Preview&course=N%2FA&semester=N%2FA&theme=light`;
+            const previewUrl = `/feedback.html?eventId=${encodeURIComponent(adminId)}&eventName=${encodeURIComponent(eventName)}&scholarId=PREVIEW-ADMIN&studentName=Admin+Preview&course=N%2FA&semester=N%2FA&theme=light`;
             document.getElementById('feedbackPreviewFrame').src = previewUrl;
             openModal('feedbackPreviewModal');
         } else {
@@ -2483,13 +2487,23 @@ let fbLineChartInst = null;
 let allFeedbackData = [];
 let allFeedbackEvents = [];
 
+if (typeof socket !== 'undefined' && socket) {
+    socket.on('feedbackUpdate', (data) => {
+        // If the user is currently on the feedback tab, reload data instantly
+        const activeTab = document.querySelector('.sidebar a.active');
+        if (activeTab && activeTab.getAttribute('data-tab') === 'feedback') {
+            loadFeedbackDashboard();
+        }
+    });
+}
+
 async function loadFeedbackDashboard() {
     try {
         // Fetch events from main backend
-        const resEvents = await fetch('/api/events');
+        const resEvents = await fetch('/api/admin/all');
         if (!resEvents.ok) throw new Error('Failed to fetch events');
-        allFeedbackEvents = await resEvents.json();
-        
+        const data = await resEvents.json();
+        allFeedbackEvents = data.admins || [];
         // Populate Event Filter if empty
         const filterEl = document.getElementById('fbEventFilter');
         if (filterEl && filterEl.options.length <= 1) {
@@ -2501,12 +2515,12 @@ async function loadFeedbackDashboard() {
             });
         }
         
-        // Fetch feedback from feedback system backend
-        const resFb = await fetch('http://localhost:4000/api/feedback/all');
+        // Fetch feedback from internal mainqr backend
+        const resFb = await fetch('/api/admin/feedback/all');
         if (resFb.ok) {
             allFeedbackData = await resFb.json();
         } else {
-            console.warn('Could not fetch feedback from port 4000. Is the server running?');
+            console.warn('Could not fetch feedback from internal API.');
             allFeedbackData = [];
         }
         

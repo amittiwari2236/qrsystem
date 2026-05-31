@@ -3,10 +3,14 @@ const router = express.Router();
 const submissionController = require('../controllers/submissionController');
 const uploadController = require('../controllers/uploadController');
 const studentController = require('../controllers/studentController');
+const feedbackController = require('../controllers/feedbackController');
 const Event = require('../models/Event');
 
 // User Registration form submit (targets specific admin sheet)
 router.post('/register/:eventId', submissionController.submitRegistration);
+
+// Feedback Submission Endpoint
+router.post('/feedback/submit', feedbackController.submitFeedback);
 
 // File Bulk Upload for an Event
 router.post('/upload/:adminId', uploadController.uploadMiddleware, uploadController.uploadAndExtract);

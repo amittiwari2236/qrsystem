@@ -6,6 +6,7 @@ const Event = require('../models/Event');
 const QRData = require('../models/QRData');
 const Notification = require('../models/Notification');
 
+
 const Admin = require('../models/Admin');
 
 exports.login = async (req, res) => {
@@ -639,7 +640,7 @@ exports.requestFeedback = async (req, res) => {
         const presentStudents = await Registration.find({ eventId: event.eventId, attendance: 'Present' });
 
         if (presentStudents.length === 0) {
-            return res.status(400).json({ error: 'No students marked as "Present" for this event.' });
+            return res.status(200).json({ success: false, error: 'No students marked as "Present" for this event.' });
         }
 
         const mailService = require('../services/mailService');
@@ -668,9 +669,57 @@ exports.requestFeedback = async (req, res) => {
         event.feedbackEmailsSent = (event.feedbackEmailsSent || 0) + sentCount;
         await event.save();
 
+        const io = req.app.get('socketio');
+        if (io) {
+            io.emit('feedbackUpdate', { eventId: event.eventId, sentCount });
+        }
+
         res.status(200).json({ message: 'Feedback requests dispatched', sentCount });
     } catch (error) {
         console.error('Error requesting feedback:', error);
         res.status(500).json({ error: 'Failed to request feedback' });
+    }
+};
+
+exports.getAllFeedback = async (req, res) => {
+    try {
+        const spreadsheetId = process.env.MASTER_SHEET_ID;
+        let rows = [];
+        try {
+            rows = await googleSheetsService.getRegistrations(spreadsheetId, 'Feedback');
+        } catch (e) {
+            // Tab doesn't exist yet, return empty array
+            return res.status(200).json([]);
+        }
+
+        if (!rows || rows.length <= 1) {
+            return res.status(200).json([]);
+        }
+
+        // Skip header row
+        const feedbackData = rows.slice(1).map(row => {
+            return {
+                submittedAt: row[0],
+                eventId: row[1],
+                eventName: row[2],
+                scholarId: row[3],
+                studentName: row[4],
+                email: row[5],
+                course: row[6],
+                semester: row[7],
+                rating: row[8],
+                relevance: row[9],
+                valuableGain: row[10],
+                nextLearn: row[11]
+            };
+        });
+        
+        // Sort by submittedAt descending (just reverse since newer are appended at the bottom)
+        feedbackData.reverse();
+
+        res.status(200).json(feedbackData);
+    } catch (error) {
+        console.error('Error fetching all feedback:', error);
+        res.status(500).json({ error: 'Failed to fetch feedback' });
     }
 };

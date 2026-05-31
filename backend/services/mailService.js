@@ -97,7 +97,8 @@ exports.sendFeedbackRequestEmail = async (student, eventData, theme = 'dark') =>
     try {
         if (!student.email) return false;
 
-        const feedbackUrl = `http://localhost:4000/?eventId=${encodeURIComponent(eventData.adminId)}&eventName=${encodeURIComponent(eventData.eventName)}&scholarId=${encodeURIComponent(student.scholarId)}&studentName=${encodeURIComponent(student.name)}&course=${encodeURIComponent(student.course)}&semester=${encodeURIComponent(student.semester)}&theme=${encodeURIComponent(theme)}`;
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const feedbackUrl = `${baseUrl}/feedback.html?eventId=${encodeURIComponent(eventData.adminId)}&eventName=${encodeURIComponent(eventData.eventName)}&scholarId=${encodeURIComponent(student.scholarId)}&studentName=${encodeURIComponent(student.name)}&course=${encodeURIComponent(student.course)}&semester=${encodeURIComponent(student.semester)}&theme=${encodeURIComponent(theme)}`;
 
         const isLight = theme === 'light';
         const bgColor = isLight ? '#f8fafc' : '#020617';
