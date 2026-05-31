@@ -46,7 +46,8 @@ exports.createAdminCard = async (req, res) => {
         }
 
         // 1. & 5. Perform Google Sheets initialization and Cloudinary upload in parallel
-        const columns = ['Scholar ID', 'Name', 'Mobile', 'Email', 'Course', 'Semester', 'Registration ID', 'Date', 'Event Name', 'Venue', 'Time', 'QR Status'];
+        const columns = ['Scholar ID', 'Name', 'Mobile', 'Email', 'Course', 'Semester', 'Registration ID', 'Date', 'Event Name', 'Venue', 'Time', 'QR Status', 'Feedback Submitted', 'Overall Rating', 'Relevance Rating', 'Most Valuable Learning', 'Next Session Interest', 'Feedback Timestamp'];
+
         
         let tabName;
         let imageUrl = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=600&auto=format&fit=crop';
@@ -320,7 +321,7 @@ exports.deleteEventRecords = async (req, res) => {
 
         // Clear Google Sheet (Fail Gracefully)
         try {
-            const columns = ['Scholar ID', 'Name', 'Mobile', 'Email', 'Course', 'Semester', 'Attendance', 'Timestamp'];
+            const columns = ['Scholar ID', 'Name', 'Mobile', 'Email', 'Course', 'Semester', 'Registration ID', 'Date', 'Event Name', 'Venue', 'Time', 'QR Status', 'Feedback Submitted', 'Overall Rating', 'Relevance Rating', 'Most Valuable Learning', 'Next Session Interest', 'Feedback Timestamp'];
             await googleSheetsService.clearSheetTab(event.spreadsheetId, event.sheetName, columns);
         } catch (sheetError) {
             console.error('Google Sheets clear failed, but deleted from MongoDB:', sheetError.message);
@@ -683,41 +684,47 @@ exports.requestFeedback = async (req, res) => {
 
 exports.getAllFeedback = async (req, res) => {
     try {
-        const spreadsheetId = process.env.MASTER_SHEET_ID;
-        let rows = [];
-        try {
-            rows = await googleSheetsService.getRegistrations(spreadsheetId, 'Feedback');
-        } catch (e) {
-            // Tab doesn't exist yet, return empty array
-            return res.status(200).json([]);
+        const Event = require('../models/Event');
+        const events = await Event.find({});
+        let allFeedback = [];
+
+        // Fetch feedback directly from each event's specific tab
+        for (const event of events) {
+            if (!event.spreadsheetId || !event.sheetName) continue;
+            try {
+                const rows = await googleSheetsService.getRegistrations(event.spreadsheetId, event.sheetName);
+                if (!rows || rows.length <= 1) continue;
+                
+                // Skip header row
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    // Column index 12 (M) is 'Feedback Submitted'
+                    if (row[12] && String(row[12]).trim().toLowerCase() === 'yes') {
+                        allFeedback.push({
+                            submittedAt: row[17] || new Date().toISOString(), // Feedback Timestamp
+                            eventId: event.eventId,
+                            eventName: event.eventName,
+                            scholarId: row[0] || 'Unknown',
+                            studentName: row[1] || 'Unknown',
+                            email: row[3] || 'N/A',
+                            course: row[4] || 'N/A',
+                            semester: row[5] || 'N/A',
+                            rating: row[13] || 'N/A',
+                            relevance: row[14] || 'N/A',
+                            valuableGain: row[15] || 'N/A',
+                            nextLearn: row[16] || 'N/A'
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn(`Could not fetch feedback for event ${event.eventName}:`, e.message);
+            }
         }
 
-        if (!rows || rows.length <= 1) {
-            return res.status(200).json([]);
-        }
+        // Sort by submittedAt descending (newest first)
+        allFeedback.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
 
-        // Skip header row
-        const feedbackData = rows.slice(1).map(row => {
-            return {
-                submittedAt: row[0],
-                eventId: row[1],
-                eventName: row[2],
-                scholarId: row[3],
-                studentName: row[4],
-                email: row[5],
-                course: row[6],
-                semester: row[7],
-                rating: row[8],
-                relevance: row[9],
-                valuableGain: row[10],
-                nextLearn: row[11]
-            };
-        });
-        
-        // Sort by submittedAt descending (just reverse since newer are appended at the bottom)
-        feedbackData.reverse();
-
-        res.status(200).json(feedbackData);
+        res.status(200).json(allFeedback);
     } catch (error) {
         console.error('Error fetching all feedback:', error);
         res.status(500).json({ error: 'Failed to fetch feedback' });

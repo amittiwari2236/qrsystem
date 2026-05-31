@@ -401,6 +401,41 @@ async function updateRegistrationStatus(spreadsheetId, tabName, scholarId, statu
     }
 }
 
+/**
+ * Updates the feedback columns (M to R) for a specific registration in Google Sheets
+ */
+async function updateRegistrationFeedback(spreadsheetId, tabName, scholarId, feedbackArray) {
+    try {
+        const rows = await getRegistrations(spreadsheetId, tabName);
+        if (!rows || rows.length === 0) return false;
+
+        // Find the row index (assuming Scholar ID is in column A -> index 0)
+        const sId = String(scholarId).trim().toLowerCase();
+        const rowIndex = rows.findIndex(r => String(r[0]).trim().toLowerCase() === sId);
+
+        if (rowIndex !== -1) {
+            // Update Feedback columns (M through R)
+            // M is index 12, N is 13, O is 14, P is 15, Q is 16, R is 17
+            // Range M(rowIndex + 1):R(rowIndex + 1)
+            const range = `${tabName}!M${rowIndex + 1}:R${rowIndex + 1}`;
+            
+            const values = [feedbackArray];
+            await sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range,
+                valueInputOption: 'USER_ENTERED',
+                resource: { values },
+            });
+            
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error updating registration feedback in sheet:', error);
+        return false;
+    }
+}
+
 module.exports = {
     createSheetTab,
     initializeSheetColumns,
@@ -412,5 +447,6 @@ module.exports = {
     clearSheetTab,
     deleteRegistrationRow,
     updateCell,
-    updateRegistrationStatus
+    updateRegistrationStatus,
+    updateRegistrationFeedback
 };

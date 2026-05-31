@@ -10,59 +10,50 @@ exports.submitFeedback = async (req, res) => {
             return res.status(400).json({ error: 'Event ID, Scholar ID, and Rating are required.' });
         }
 
-        const spreadsheetId = process.env.MASTER_SHEET_ID;
-        const tabName = 'Feedback';
-
-        // Check if tab exists, if not create and initialize
-        try {
-            await googleSheetsService.getRegistrations(spreadsheetId, tabName);
-        } catch (error) {
-            console.log("Feedback tab doesn't exist. Creating it...");
-            await googleSheetsService.createSheetTab(spreadsheetId, tabName);
-            await googleSheetsService.initializeSheetColumns(spreadsheetId, tabName, [
-                'Timestamp', 'Event ID', 'Event Name', 'Scholar ID', 'Student Name', 'Email', 'Course', 'Semester', 'Overall Rating', 'Relevance Rating', 'Most Valuable Learning', 'Next Session Interest', 'IP Address'
-            ]);
+        const event = await Event.findOne({ eventId });
+        if (!event || !event.spreadsheetId || !event.sheetName) {
+            return res.status(404).json({ error: 'Event not found or Google Sheet not configured.' });
         }
 
-        // Try to fetch email from Registration if not provided
-        let email = 'N/A';
-        try {
-            const reg = await Registration.findOne({ eventId, scholarId });
-            if (reg && reg.email) {
-                email = reg.email;
-            }
-        } catch (e) {
-            console.warn("Could not fetch email for feedback", e);
+        const spreadsheetId = event.spreadsheetId;
+        const tabName = event.sheetName;
+
+        const existingData = await googleSheetsService.getRegistrations(spreadsheetId, tabName);
+        if (!existingData || existingData.length === 0) {
+            return res.status(404).json({ error: 'Event sheet is empty.' });
         }
 
-        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown IP';
+        const sId = String(scholarId).trim().toLowerCase();
+        const rowIndex = existingData.findIndex(row => String(row[0]).trim().toLowerCase() === sId);
+
+        if (rowIndex === -1) {
+            return res.status(404).json({ error: 'Scholar ID not found in the event sheet.' });
+        }
+
+        const existingRow = existingData[rowIndex];
+        // Column M is index 12 ('Feedback Submitted')
+        if (existingRow[12] && String(existingRow[12]).trim().toLowerCase() === 'yes') {
+            return res.status(409).json({ error: 'Feedback already submitted for this event.' });
+        }
+
         const timestamp = new Date().toISOString();
 
-        const rowData = [
-            timestamp,
-            eventId,
-            eventName || 'Unknown',
-            scholarId,
-            studentName || 'Unknown',
-            email,
-            course || 'N/A',
-            semester || 'N/A',
+        // Prepare feedback array corresponding to columns M to R
+        // ['Feedback Submitted', 'Overall Rating', 'Relevance Rating', 'Most Valuable Learning', 'Next Session Interest', 'Feedback Timestamp']
+        const feedbackArray = [
+            'Yes',
             rating,
             relevance || 'N/A',
             valuableGain || 'N/A',
             nextLearn || 'N/A',
-            ipAddress
+            timestamp
         ];
 
-        // Ensure we don't save duplicates
-        const existingData = await googleSheetsService.getRegistrations(spreadsheetId, tabName);
-        const isDuplicate = existingData.some(row => row[1] === eventId && row[3] === scholarId);
-        
-        if (isDuplicate) {
-            return res.status(409).json({ error: 'Feedback already submitted for this event.' });
-        }
+        const success = await googleSheetsService.updateRegistrationFeedback(spreadsheetId, tabName, scholarId, feedbackArray);
 
-        await googleSheetsService.appendRegistrationRow(spreadsheetId, tabName, rowData);
+        if (!success) {
+            return res.status(500).json({ error: 'Failed to save feedback to Google Sheet.' });
+        }
 
         // Emit WebSocket event so dashboard updates in real time
         const io = req.app.get('socketio');
